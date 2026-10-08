@@ -130,17 +130,55 @@ async function resultats(q, grp) {
   if (!document.getElementById('res') || q !== rechercheQ) return;
   if (!liste) { res.innerHTML = '<p class="empty">Hors ligne : recherche indisponible.</p>'; return; }
   res.innerHTML = liste.length
-    ? `<div class="card"><ul class="list">${liste.map(ligneAliment).join('')}</ul></div>`
+    ? `<div class="card"><ul class="list">${liste.map((a) => ligneAliment(a, true)).join('')}</ul></div>`
     : `<p class="empty">Aucun aliment pour « ${esc(q)} ». Essayez un mot plus court ou au singulier.</p>`;
 }
 
-const ligneAliment = (a) => `<li><a href="#/aliment/${a.code}">${scoreBadge(a.score)}<span class="grow"><span class="nom">${esc(a.nom)}</span>
-  <span class="sub">${esc(a.groupe || '')}${a.portion ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span><span class="val">${a.kcal == null ? '–' : `${fmt(a.kcal)} kcal`}<br><span class="small muted">/ 100 g</span></span></a></li>`;
+const ligneAliment = (a, actions) => `<li${actions ? ' class="act"' : ''}><a href="#/aliment/${a.code}">${scoreBadge(a.score)}<span class="grow"><span class="nom">${esc(a.nom)}</span>
+  <span class="sub">${esc(a.groupe || '')}${a.portion ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span><span class="val">${a.kcal == null ? '–' : `${fmt(a.kcal)} kcal`}<br><span class="small muted">/ 100 g</span></span></a>${actions ? boutonsAliment(a) : ''}</li>`;
+// Boutons « comparer » et « assiette » d'une ligne de résultat : ajoutent, ou retirent si l'aliment y est déjà.
+const boutonsAliment = (a) => {
+  const c = comparer.includes(a.code);
+  const s = assiette.some((x) => x.code === a.code);
+  return `<span class="acts"><button class="ib ${c ? 'on' : ''}" data-cmp="${a.code}" title="${c ? 'Retirer du comparateur' : 'Ajouter au comparateur'}" aria-pressed="${c}">⇄</button>`
+    + `<button class="ib ${s ? 'on' : ''}" data-ass="${a.code}" data-portion="${a.portion || 100}" title="${s ? "Retirer de l'assiette" : "Ajouter à l'assiette"}" aria-pressed="${s}">◍</button></span>`;
+};
+// Délégation : un seul écouteur pour toutes les listes de la page.
+$app.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cmp], [data-ass]');
+  if (!b || !b.classList.contains('ib')) return;
+  e.preventDefault();
+  const code = Number(b.dataset.cmp || b.dataset.ass);
+  const nom = b.closest('li').querySelector('.nom').textContent.split(',')[0];
+  if (b.dataset.cmp) {
+    if (comparer.includes(code)) { comparer = comparer.filter((x) => x !== code); toast(`${nom} retiré du comparateur`); }
+    else {
+      if (comparer.length >= 4) comparer.shift();
+      comparer.push(code);
+      toast(comparer.length > 1 ? `${comparer.length} aliments à comparer` : 'Ajoutez un 2e aliment pour comparer');
+    }
+    store.set('comparer', comparer);
+  } else {
+    if (assiette.some((x) => x.code === code)) { assiette = assiette.filter((x) => x.code !== code); toast(`${nom} retiré de l'assiette`); }
+    else { assiette.push({ code, g: Number(b.dataset.portion) }); toast(`${nom} ajouté à l'assiette (${fmt(Number(b.dataset.portion))} g)`); }
+    store.set('assiette', assiette);
+  }
+  badges();
+  // Met à jour l'état de tous les boutons de la page (l'aliment peut apparaître deux fois, ou le comparateur être décalé).
+  $app.querySelectorAll('li.act').forEach((li) => {
+    const x = li.querySelector('[data-cmp]');
+    const c = comparer.includes(Number(x.dataset.cmp));
+    const y = li.querySelector('[data-ass]');
+    const v = assiette.some((i) => i.code === Number(y.dataset.ass));
+    x.classList.toggle('on', c); x.setAttribute('aria-pressed', c); x.title = c ? 'Retirer du comparateur' : 'Ajouter au comparateur';
+    y.classList.toggle('on', v); y.setAttribute('aria-pressed', v); y.title = v ? "Retirer de l'assiette" : "Ajouter à l'assiette";
+  });
+});
 
 function accueil() {
   const cles = ['prot', 'fibres', 'fer', 'calcium', 'magnesium', 'iode', 'vitd', 'vitc', 'b9', 'b12', 'dha', 'leu', 'lys', 'sel'];
   return `
-    ${recents.length ? `<h2>Consultés récemment</h2><div class="card"><ul class="list">${recents.map(ligneAliment).join('')}</ul></div>` : ''}
+    ${recents.length ? `<h2>Consultés récemment</h2><div class="card"><ul class="list">${recents.map((a) => ligneAliment(a, true)).join('')}</ul></div>` : ''}
     <h2>Où trouver…</h2>
     <div class="chips">${cles.map((k) => `<a class="chip" href="#/nutriment/${k}">${esc(NUT[k].label)}</a>`).join('')}
       <a class="chip ghost" href="#/nutriments">Tous les nutriments →</a></div>

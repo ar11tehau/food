@@ -86,6 +86,14 @@ select, input[type=number], input[type=text] {
 .list .nom { display: block; }
 .list .sub { display: block; font-size: .8rem; color: var(--muted); }
 .list .val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .9rem; }
+.list li.act { display: flex; align-items: center; gap: 6px; }
+.list li.act > a { flex: 1; min-width: 0; }
+.acts { display: flex; gap: 6px; }
+.ib {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  font-size: 1.05rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.ib.on { background: var(--brand); border-color: var(--brand); color: var(--card); }
 .list .rank { width: 1.6em; color: var(--muted); font-size: .8rem; text-align: right; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
