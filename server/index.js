@@ -2,6 +2,7 @@
 //   PORT (3310), HOST (127.0.0.1), FOOD_DB (data/ciqual.db)
 const http = require('node:http');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const { open, norm } = require('./db');
@@ -10,6 +11,7 @@ const FICHES = require('./fiches');
 const { unite } = require('./unites');
 const { R, ASSIMILATION, REFS_PAR_CAT, REFS_PAR_CLE } = require('./assimilation');
 const { POSITIFS, NEGATIFS, REF: REF_SCORE, SEUILS, REFERENCE_AA, LABEL_AA, indiceChimique } = require('./score');
+const creerPages = require('./pages');
 
 const PORT = Number(process.env.PORT) || 3310;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -50,6 +52,8 @@ const META = {
   score: { positifs: POSITIFS, negatifs: NEGATIFS, ref: REF_SCORE, seuils: SEUILS },
   aa: { reference: REFERENCE_AA, labels: LABEL_AA },
 };
+
+const PAGES = creerPages({ db, GROUPES, CATEGORIES, NUTRIMENTS, BY_KEY, FICHES, SOURCES, NB_ALIMENTS, source: META_DB.source });
 
 const chaine = (a) => [a.grp, a.ssgrp, a.sssgrp].filter((c) => c && GROUPES[c]).map((c) => ({ code: c, nom: GROUPES[c] }));
 const resume = (a) => ({ code: a.code, nom: a.nom, groupe: GROUPES[a.sssgrp] || GROUPES[a.ssgrp] || GROUPES[a.grp] || null,
@@ -170,24 +174,53 @@ function send(req, res, status, body, type, headers = {}) {
   res.end(req.method === 'HEAD' ? undefined : buf);
 }
 
-function statique(req, res, pathname) {
-  let file = path.normalize(path.join(PUBLIC, decodeURIComponent(pathname)));
+// app.js et style.css sont appelés avec ?v=<empreinte> : mis en cache un an, l'empreinte change à chaque modification.
+const empreintes = new Map();
+function empreinte(nom) {
+  const file = path.join(PUBLIC, nom);
+  const mtime = fs.statSync(file).mtimeMs;
+  const e = empreintes.get(nom);
+  if (e?.mtime === mtime) return e.v;
+  const v = crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex').slice(0, 10);
+  empreintes.set(nom, { mtime, v });
+  return v;
+}
+
+// Pages de l'appli : gabarit index.html complété par pages.js (titre, description, premier contenu).
+function page(req, res, url) {
+  const p = PAGES.rendre(url.pathname);
+  if (p.redirection) {
+    res.writeHead(301, { Location: p.redirection + url.search });
+    return res.end();
+  }
+  const gabarit = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
+    .replace('/style.css', `/style.css?v=${empreinte('style.css')}`).replace('/app.js', `/app.js?v=${empreinte('app.js')}`);
+  send(req, res, p.status, PAGES.html(gabarit, p), TYPES['.html'], { 'Cache-Control': 'no-cache' });
+}
+
+function statique(req, res, url) {
+  const { pathname } = url;
+  if (pathname === '/robots.txt') return send(req, res, 200, PAGES.robots(), 'text/plain; charset=utf-8', { 'Cache-Control': 'public, max-age=86400' });
+  if (pathname === '/sitemap.xml') return send(req, res, 200, PAGES.sitemap(), 'application/xml; charset=utf-8', { 'Cache-Control': 'public, max-age=86400' });
+  if (pathname === '/index.html') { res.writeHead(301, { Location: '/' }); return res.end(); }
+  if (!path.extname(pathname)) return page(req, res, url);
+  let file;
+  try { file = path.normalize(path.join(PUBLIC, decodeURIComponent(pathname))); } catch { file = ''; }
   if (!file.startsWith(PUBLIC)) return send(req, res, 403, 'Interdit', 'text/plain');
-  if (pathname === '/' || !path.extname(file)) file = path.join(PUBLIC, 'index.html'); // routes de l'appli (#…) et liens directs
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) return send(req, res, 404, 'Introuvable', 'text/plain');
     const etag = `"${st.size.toString(36)}-${st.mtimeMs.toString(36)}"`;
     if (req.headers['if-none-match'] === etag) { res.writeHead(304, { ETag: etag }); return res.end(); }
-    const longue = /^\/icon|^\/apple-touch/.test(pathname);
-    send(req, res, 200, fs.readFileSync(file), TYPES[path.extname(file)] || 'application/octet-stream',
-      { ETag: etag, 'Cache-Control': longue ? 'public, max-age=604800' : 'no-cache' });
+    const cache = url.searchParams.has('v') ? 'public, max-age=31536000, immutable'
+      : /^\/icon|^\/apple-touch/.test(pathname) ? 'public, max-age=604800' : 'no-cache';
+    send(req, res, 200, fs.readFileSync(file), TYPES[path.extname(file)] || 'application/octet-stream', { ETag: etag, 'Cache-Control': cache });
   });
 }
 
 const server = http.createServer((req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(req, res, 405, 'Méthode non permise', 'text/plain');
   const url = new URL(req.url, 'http://localhost');
-  if (!url.pathname.startsWith('/api/')) return statique(req, res, url.pathname);
+  if (!url.pathname.startsWith('/api/')) return statique(req, res, url);
   try {
     send(req, res, 200, JSON.stringify(api(url)), 'application/json; charset=utf-8',
       { 'Cache-Control': url.pathname === '/api/health' ? 'no-store' : 'public, max-age=3600' });

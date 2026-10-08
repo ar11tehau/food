@@ -69,6 +69,29 @@ test('fichiers statiques et routes inconnues', async () => {
   assert.strictEqual((await get('/api/rien')).status, 404);
 });
 
+test('pages rendues pour les moteurs de recherche', async () => {
+  const r = await fetch(`http://127.0.0.1:${PORT}/aliment/13039`, { redirect: 'manual' });
+  assert.strictEqual(r.status, 301);
+  const url = r.headers.get('location');
+  assert.match(url, /^\/aliment\/13039-pomme/);
+  const a = (await get(url)).body;
+  assert.match(a, /<title>Pomme[^<]*valeurs nutritionnelles · Food<\/title>/);
+  assert.match(a, new RegExp(`<link rel="canonical" href="https://food.domelier.fr${url}">`));
+  assert.match(a, /<h1>Pomme/);
+  assert.match(a, /"@type":"BreadcrumbList"/);
+  assert.match(a, /\/app\.js\?v=\w+/);
+  const n = (await get('/nutriment/fer')).body;
+  assert.match(n, /<h1>Fer<\/h1>/);
+  assert.match(n, /href="\/aliment\/\d+-/);
+  assert.match((await get('/comparer')).body, /<meta name="robots" content="noindex">/);
+  assert.strictEqual((await get('/aliment/1')).status, 404);
+  assert.strictEqual((await get('/nimporte')).status, 404);
+  assert.match((await get('/robots.txt')).body, /Sitemap: https:\/\/food\.domelier\.fr\/sitemap\.xml/);
+  const sm = (await get('/sitemap.xml')).body;
+  assert.strictEqual(sm.match(/\/aliment\//g).length, 3484);
+  assert.ok(sm.includes('/nutriment/vitc<'));
+});
+
 test('portions, score, qualité, acides aminés', async () => {
   const a = (await get('/api/aliment/13039')).body; // pomme
   assert.ok(a.portion.g >= 100 && a.portion.g <= 200);

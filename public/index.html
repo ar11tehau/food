@@ -4,31 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#3d7a3a">
-  <meta name="description" content="Intérêt nutritionnel des aliments : macro et micronutriments de la table Ciqual (Anses), fiches nutriments, comparateur et assiette.">
-  <title>Food : ce que contient votre assiette</title>
+  <!--head-->
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/style.css">
+  <link rel="preload" href="/api/meta" as="fetch" crossorigin>
 </head>
 <body>
   <header class="top">
-    <a href="#/" class="brand"><img src="/icon-192.png" alt="" width="28" height="28"> Food</a>
+    <a href="/" class="brand"><img src="/icon-192.png" alt="" width="28" height="28"> Food</a>
     <form class="hsearch" id="hsearch" role="search" onsubmit="return false">
       <input id="hq" type="search" autocomplete="off" placeholder="Rechercher un aliment" aria-label="Rechercher un aliment">
       <div class="hres card" id="hres" hidden></div>
     </form>
-    <a href="#/profil" class="profil-btn" id="profil-btn" aria-label="Profil">Profil</a>
+    <a href="/profil" class="profil-btn" id="profil-btn" aria-label="Profil">Profil</a>
   </header>
-  <main id="app" tabindex="-1"><p class="muted center">Chargement…</p></main>
+  <main id="app" tabindex="-1"><!--contenu--></main>
   <nav class="tabs" aria-label="Navigation">
-    <a href="#/" data-tab="recherche"><span class="ico">⌕</span>Rechercher</a>
-    <a href="#/nutriments" data-tab="nutriments"><span class="ico">◈</span>Nutriments</a>
-    <a href="#/comparer" data-tab="comparer"><span class="ico">⇄</span>Comparer<b class="badge" id="badge-comparer"></b></a>
-    <a href="#/assiette" data-tab="assiette"><span class="ico">◍</span>Assiette<b class="badge" id="badge-assiette"></b></a>
+    <a href="/" data-tab="recherche"><span class="ico">⌕</span>Rechercher</a>
+    <a href="/nutriments" data-tab="nutriments"><span class="ico">◈</span>Nutriments</a>
+    <a href="/comparer" data-tab="comparer"><span class="ico">⇄</span>Comparer<b class="badge" id="badge-comparer"></b></a>
+    <a href="/assiette" data-tab="assiette"><span class="ico">◍</span>Assiette<b class="badge" id="badge-assiette"></b></a>
   </nav>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js"></script>
+  <script src="/app.js" defer></script>
   <script>
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
   </script>

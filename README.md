@@ -16,6 +16,8 @@ En ligne : https://food.domelier.fr (PWA installable, consultable hors ligne pou
 - `server/nutriments.js` : colonnes Ciqual gardées, acides aminés, unités et repères journaliers (Anses 2021, EFSA, OMS).
 - `server/fiches.js`, `server/assimilation.js` : textes des fiches, assimilation, références.
 - `server/score.js` : score de la portion (inspiré du NRF) et indice chimique des protéines.
+- `server/pages.js` : référencement. Chaque adresse (`/aliment/<code>-<nom>`, `/nutriment/<clé>`, `/nutriments`, `/meilleurs`, `/sources`…)
+  est rendue par le serveur (titre, description, canonique, Open Graph, fil d'Ariane schema.org, premier contenu) ; `robots.txt` et `sitemap.xml`.
 
 ### Données (`data/`, commitées) et outils de préparation (`tools/`)
 

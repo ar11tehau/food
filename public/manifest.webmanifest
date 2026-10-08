@@ -14,8 +14,8 @@
     { "src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Nutriments", "url": "/#/nutriments" },
-    { "name": "Assiette", "url": "/#/assiette" },
-    { "name": "Comparer", "url": "/#/comparer" }
+    { "name": "Nutriments", "url": "/nutriments" },
+    { "name": "Assiette", "url": "/assiette" },
+    { "name": "Comparer", "url": "/comparer" }
   ]
 }

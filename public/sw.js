@@ -1,11 +1,16 @@
 // Service worker : l'appli s'ouvre sans réseau avec ce qui a déjà été consulté.
 // Interface : réseau d'abord (une mise à jour s'affiche tout de suite), cache si hors ligne.
 // API : les données Ciqual ne changent qu'au déploiement → réponse du cache tout de suite, rafraîchie en arrière-plan.
-const CACHE = 'food-v5';
-const SHELL = ['/', '/style.css', '/app.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/api/meta'];
+const CACHE = 'food-v6';
+const SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/api/meta'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // app.js et style.css portent une empreinte (?v=…) : on prend celles de la page d'accueil.
+  e.waitUntil(caches.open(CACHE).then(async (c) => {
+    await c.addAll(SHELL);
+    const html = await (await c.match('/')).text();
+    await c.addAll(html.match(/\/(?:app\.js|style\.css)\?v=\w+/g) || []);
+  }).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -18,7 +23,8 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin || url.pathname === '/api/health') return;
-  const key = req.mode === 'navigate' ? '/' : req;
+  const page = req.mode === 'navigate';
+  const key = page ? url.pathname : req; // une page par adresse, sans ?g=
   const reseau = fetch(req, { cache: 'no-cache' }).then((res) => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
     return res;
@@ -30,5 +36,5 @@ self.addEventListener('fetch', (e) => {
     }));
     return;
   }
-  e.respondWith(reseau.catch(() => caches.match(key).then((r) => r || Response.error())));
+  e.respondWith(reseau.catch(() => caches.match(key).then((r) => r || (page && caches.match('/')) || Response.error())));
 });

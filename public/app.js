@@ -1,12 +1,19 @@
-// Food : interface (sans framework). Routes dans le hash :
-//   #/            recherche          #/aliment/<code>?g=150   fiche aliment
-//   #/nutriments  liste              #/nutriment/<clé>        fiche nutriment
-//   #/comparer    comparateur        #/assiette               repas en cours et repas enregistrés
-//   #/profil      profil (repères)
+// Food : interface (sans framework). Routes (le serveur rend aussi chaque page, pour les moteurs de recherche) :
+//   /             recherche          /aliment/<code>-<nom>?g=150   fiche aliment
+//   /nutriments   liste              /nutriment/<clé>              fiche nutriment
+//   /comparer     comparateur        /assiette                     repas en cours et repas enregistrés
+//   /profil       profil (repères)   /meilleurs[/<groupe>], /sources
 // Le profil, le comparateur et les assiettes restent sur l'appareil (localStorage).
 'use strict';
 
 const $app = document.getElementById('app');
+// « Pâté de foie, 100 % porc » → « pate-de-foie-100-porc » (même calcul dans server/pages.js).
+function slug(nom) {
+  const t = String(nom || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+    .replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).join('-');
+  return t.length > 70 ? t.slice(0, 71).replace(/-[^-]*$/, '') : t;
+}
+const lienAliment = (code, nom) => `/aliment/${code}${nom ? `-${slug(nom)}` : ''}`;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---------- Stockage local ----------
@@ -99,6 +106,7 @@ let rechercheQ = '';
 let rechercheGrp = '';
 async function vueRecherche() {
   $app.innerHTML = `
+    <h1 class="accroche">Valeurs nutritionnelles des aliments</h1>
     <form class="search" role="search" onsubmit="return false">
       <input id="q" type="search" autocomplete="off" placeholder="Un aliment : lentilles, saumon, comté…" value="${esc(rechercheQ)}" aria-label="Rechercher un aliment">
     </form>
@@ -134,7 +142,7 @@ async function resultats(q, grp) {
     : `<p class="empty">Aucun aliment pour « ${esc(q)} ». Essayez un mot plus court ou au singulier.</p>`;
 }
 
-const ligneAliment = (a, actions) => `<li${actions ? ' class="act"' : ''}><a href="#/aliment/${a.code}">${scoreBadge(a.score)}<span class="grow"><span class="nom">${esc(a.nom)}</span>
+const ligneAliment = (a, actions) => `<li${actions ? ' class="act"' : ''}><a href="${lienAliment(a.code, a.nom)}">${scoreBadge(a.score)}<span class="grow"><span class="nom">${esc(a.nom)}</span>
   <span class="sub">${esc(a.groupe || '')}${a.portion ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span><span class="val">${a.kcal == null ? '–' : `${fmt(a.kcal)} kcal`}<br><span class="small muted">/ 100 g</span></span></a>${actions ? boutonsAliment(a) : ''}</li>`;
 // Boutons « comparer » et « assiette » d'une ligne de résultat : ajoutent, ou retirent si l'aliment y est déjà.
 const boutonsAliment = (a) => {
@@ -180,13 +188,13 @@ function accueil() {
   return `
     ${recents.length ? `<h2>Consultés récemment</h2><div class="card"><ul class="list">${recents.map((a) => ligneAliment(a, true)).join('')}</ul></div>` : ''}
     <h2>Où trouver…</h2>
-    <div class="chips">${cles.map((k) => `<a class="chip" href="#/nutriment/${k}">${esc(NUT[k].label)}</a>`).join('')}
-      <a class="chip ghost" href="#/nutriments">Tous les nutriments →</a></div>
+    <div class="chips">${cles.map((k) => `<a class="chip" href="/nutriment/${k}">${esc(NUT[k].label)}</a>`).join('')}
+      <a class="chip ghost" href="/nutriments">Tous les nutriments →</a></div>
     <h2>Les portions les plus intéressantes</h2>
-    <div class="chips"><a class="chip" href="#/meilleurs">Tous les aliments</a>${META.groupes.filter((g) => !['10', '11', '06'].includes(g.code))
-      .map((g) => `<a class="chip ghost" href="#/meilleurs/${g.code}">${esc(g.nom)}</a>`).join('')}</div>
+    <div class="chips"><a class="chip" href="/meilleurs">Tous les aliments</a>${META.groupes.filter((g) => !['10', '11', '06'].includes(g.code))
+      .map((g) => `<a class="chip ghost" href="/meilleurs/${g.code}">${esc(g.nom)}</a>`).join('')}</div>
     <p class="note">${esc(META.source)} ; portions : Anses INCA3 ; acides aminés : USDA. ${META.aliments.toLocaleString('fr-FR')} aliments.
-      Repères pour un adulte (${esc(profilTxt())}, <a href="#/profil">modifier</a>). <a href="#/sources">Sources et méthodes</a>.
+      Repères pour un adulte (${esc(profilTxt())}, <a href="/profil">modifier</a>). <a href="/sources">Sources et méthodes</a>.
       Vos données restent sur cet appareil, rien n'est conservé sur le serveur. Informations générales, pas un avis médical.</p>`;
 }
 
@@ -206,7 +214,7 @@ function lignesNutriments(valeurs, k, rep, opts = {}) {
         const enfant = n.parent && n.cat !== 'macros' && NUT[n.parent].cat === c.key;
         const conf = opts.qualite?.[n.key]?.[0];
         const lbl = n.essentiel ? `<b>${esc(n.label)}</b>` : esc(n.label);
-        return `<a class="nut ${enfant ? 'child' : ''}" href="#/nutriment/${n.key}"><span class="lbl">${lbl}${conf ? ` <span class="conf c${conf}" title="Fiabilité Anses : ${CONF[conf]}">${conf}</span>` : ''}</span>
+        return `<a class="nut ${enfant ? 'child' : ''}" href="/nutriment/${n.key}"><span class="lbl">${lbl}${conf ? ` <span class="conf c${conf}" title="Fiabilité Anses : ${CONF[conf]}">${conf}</span>` : ''}</span>
           <span class="v">${fmtBrut(v, k)}${v == null ? '' : unite(n)}</span>${gauge(n, v == null ? null : num(v) * k, rep[n.key])}</a>`
           + (n.key === 'prot' && c.key === 'macros' ? ligneQualiteProt(opts.aa, num(v) * k) : '');
       }).join('')}</details>`;
@@ -256,7 +264,7 @@ function pointsForts(v, k, rep) {
     if (num(v[key]) >= s && !vigilance.some(([n]) => n.key === key)) vigilance.push([NUT[key], (num(v[key]) * k * 100) / rep[key].valeur]);
   }
   forts.sort((a, b) => b[1] - a[1]);
-  const chip = ([n, p], cls) => `<a class="chip ${cls}" href="#/nutriment/${n.key}">${esc(n.label)} · ${pctTxt(p)}</a>`;
+  const chip = ([n, p], cls) => `<a class="chip ${cls}" href="/nutriment/${n.key}">${esc(n.label)} · ${pctTxt(p)}</a>`;
   if (!forts.length && !vigilance.length && !faibles.length) return '';
   return `<div class="card">
     ${forts.length ? `<h3>Points forts</h3><div class="chips">${forts.map((f) => chip(f, f[1] >= 30 ? '' : 'ghost')).join('')}</div>` : ''}
@@ -284,21 +292,21 @@ function carteScore(a) {
     ${plus.length ? `<p class="small">Apporte (en % du repère) :</p><div class="chips">${plus.slice(0, 8).map((x) => chip(x, x[1] >= e ? '' : 'ghost')).join('')}</div>` : ''}
     ${moins.some(([, p]) => p < 0) ? `<p class="small">À limiter (en % de la limite du jour) :</p><div class="chips">${moins.map((x) => chip(x, -x[1] > e ? 'warn' : 'ghost')).join('')}</div>` : ''}
     <p class="small muted">Un nutriment compte en bonus s'il dépasse la part de calories de la portion (${e} %).
-      <a href="#/sources">Comment est calculé le score ?</a></p></div>`;
+      <a href="/sources">Comment est calculé le score ?</a></p></div>`;
 }
 
 // Qualité des protéines, en sous-ligne de « Protéines » : seulement si la quantité choisie en apporte au moins 3 g.
 function ligneQualiteProt(aa, prot) {
   const q = aa?.qualite;
   if (!q || !(prot >= 3)) return '';
-  const lim = q.limitant ? (NUT[q.limitant] ? `<a href="#/nutriment/${q.limitant}">${esc(q.limitantLabel)}</a>` : esc(q.limitantLabel)) : null;
+  const lim = q.limitant ? (NUT[q.limitant] ? `<a href="/nutriment/${q.limitant}">${esc(q.limitantLabel)}</a>` : esc(q.limitantLabel)) : null;
   const cls = q.indice >= 100 ? '' : q.indice >= 75 ? 'max' : 'max over';
   const conseil = q.limitant === 'lys' ? ' Associer des légumineuses ou des produits animaux.'
     : q.limitant === 'soufres' ? ' Associer des céréales, des oléagineux ou des produits animaux.' : '';
   return `<div class="nut child"><span class="lbl">Qualité (indice chimique)${q.indice >= 100 ? ' · complètes' : ''}</span><span class="v">${q.indice} %</span>
     <div class="bar"><div class="gauge ${cls}"><span style="width:${q.indice}%"></span></div><span class="pct"></span></div>
     <span class="small muted" style="grid-column:1/-1">${lim ? `Limitant : ${lim}.${conseil}` : 'Tous les acides aminés indispensables sont au niveau de référence.'}
-      <a href="#/sources">Comment est-ce calculé ?</a></span></div>`;
+      <a href="/sources">Comment est-ce calculé ?</a></span></div>`;
 }
 
 const CONF = { A: 'très fiable', B: 'fiable', C: 'moins fiable', D: 'peu fiable (estimation)' };
@@ -312,7 +320,7 @@ function carteSources(a) {
     <p class="small">Indice de confiance de l'Anses : ${['A', 'B', 'C', 'D'].map((c) => `<span class="conf c${c}">${c}</span> ${CONF[c]} (${nb[c] || 0})`).join(' · ')}.</p>
     <ul class="sources">${lignes.join('')}</ul>
     ${a.aa ? `<p class="small">Acides aminés : profil USDA FoodData Central « ${esc(a.aa.source)} »${a.aa.estime ? ' (estimation par groupe)' : ''} appliqué aux protéines Ciqual.</p>` : ''}
-    <p class="small">Portion : ${esc(ORIGINE_PORTION[a.portion.origine] || 'par défaut, 100 g')}. <a href="#/sources">Toutes les sources</a></p></details>`;
+    <p class="small">Portion : ${esc(ORIGINE_PORTION[a.portion.origine] || 'par défaut, 100 g')}. <a href="/sources">Toutes les sources</a></p></details>`;
 }
 
 async function vueAliment(code, params) {
@@ -323,7 +331,7 @@ async function vueAliment(code, params) {
   recents = [{ code: a.code, nom: a.nom, groupe: a.groupes.at(-1)?.nom, kcal: num(a.valeurs.kcal), portion: a.portion.g, unite: a.unite, score: a.score.lettre },
     ...recents.filter((r) => r.code !== a.code)].slice(0, 8);
   store.set('recents', recents);
-  document.title = `${a.nom} · Food`;
+  document.title = `${a.nom} : valeurs nutritionnelles · Food`;
   const dansComparer = comparer.includes(a.code);
   $app.innerHTML = `
     <p class="small muted">${a.groupes.map((x) => esc(x.nom)).join(' › ')}</p>
@@ -349,7 +357,7 @@ async function vueAliment(code, params) {
     ${carteSources(a)}
     ${a.semblables.length ? `<h2>Dans le même groupe</h2><div class="card"><ul class="list">${a.semblables.slice(0, 12).map(ligneAliment).join('')}</ul></div>` : ''}`;
 
-  const setG = (v) => { location.replace(`#/aliment/${code}${Number(v) === gDefaut ? '' : `?g=${Number(v)}`}`); };
+  const setG = (v) => { go(`${lienAliment(a.code, a.nom)}${Number(v) === gDefaut ? '' : `?g=${Number(v)}`}`, true); };
   $app.querySelectorAll('[data-g]').forEach((b) => b.addEventListener('click', () => setG(b.dataset.g)));
   const gi = document.getElementById('g');
   gi.addEventListener('change', () => { if (gi.value > 0) setG(gi.value); });
@@ -358,7 +366,7 @@ async function vueAliment(code, params) {
     toast(`${a.nom.split(',')[0]} ajouté à l'assiette`);
   });
   document.getElementById('add-comparer').addEventListener('click', (e) => {
-    if (comparer.includes(a.code)) { location.hash = '#/comparer'; return; }
+    if (comparer.includes(a.code)) { go('/comparer'); return; }
     if (comparer.length >= 4) comparer.shift();
     comparer.push(a.code); store.set('comparer', comparer); badges();
     e.target.textContent = '✓ Dans le comparateur';
@@ -371,7 +379,7 @@ async function vueNutriments() {
   document.title = 'Nutriments · Food';
   $app.innerHTML = `<h1>Nutriments</h1><p class="muted">À quoi sert chaque nutriment, que se passe-t-il en cas de manque ou d'excès, et où le trouver.</p>
     ${META.categories.map((c) => `<h2>${esc(c.label)}</h2><div class="card"><ul class="list">
-      ${META.nutriments.filter((n) => n.cat === c.key).map((n) => `<li><a href="#/nutriment/${n.key}"><span class="grow">
+      ${META.nutriments.filter((n) => n.cat === c.key).map((n) => `<li><a href="/nutriment/${n.key}"><span class="grow">
         <span class="nom">${n.parent && NUT[n.parent].cat === c.key ? '<span class="muted">↳ </span>' : ''}${esc(n.label)}</span>
         ${n.resume ? `<span class="sub">${esc(n.resume.length > 110 ? `${n.resume.slice(0, 108)}…` : n.resume)}</span>` : ''}</span></a></li>`).join('')}
     </ul></div>`).join('')}`;
@@ -384,17 +392,17 @@ async function vueNutriment(key) {
     api(`nutriment/${key}?par=${o.par}&limit=40${o.grp ? `&grp=${o.grp}` : ''}${o.tout ? '&tout=1' : ''}`), getReperes()]);
   const r = rep[key];
   const f = n.fiche || {};
-  document.title = `${n.label} · Food`;
+  document.title = `${n.label} : rôle, besoins et aliments les plus riches · Food`;
   const bloc = (cle, titre) => (f[cle] ? `<div class="bloc ${cle}"><h3>${titre}</h3><p>${esc(f[cle])}</p></div>` : '');
   const titreClassement = r?.type === 'max' ? 'Aliments qui en contiennent le plus' : 'Meilleures sources';
   $app.innerHTML = `
-    ${n.parent ? `<p class="small"><a href="#/nutriment/${n.parent.key}">← ${esc(n.parent.label)}</a></p>` : ''}
+    ${n.parent ? `<p class="small"><a href="/nutriment/${n.parent.key}">← ${esc(n.parent.label)}</a></p>` : ''}
     <h1>${esc(n.label)}</h1>
     ${f.resume ? `<p>${esc(f.resume)}</p>` : ''}
     ${r ? `<div class="card repere"><span>Repère : <b>${fmt(r.valeur)}${unite(n)}</b> par jour</span>
       <span class="muted">${typeLabel[r.type]}${r.ul ? ` · limite de sécurité ${fmt(r.ul)}${unite(n)}` : ''}</span>
-      <span class="muted small">Profil : ${esc(profilTxt())} · <a href="#/profil">modifier</a></span></div>` : ''}
-    ${n.enfants.length ? `<div class="chips">${n.enfants.map((c) => `<a class="chip ghost" href="#/nutriment/${c.key}">${esc(c.label)}</a>`).join('')}</div>` : ''}
+      <span class="muted small">Profil : ${esc(profilTxt())} · <a href="/profil">modifier</a></span></div>` : ''}
+    ${n.enfants.length ? `<div class="chips">${n.enfants.map((c) => `<a class="chip ghost" href="/nutriment/${c.key}">${esc(c.label)}</a>`).join('')}</div>` : ''}
     <div class="fiche">
       ${bloc('role', 'À quoi ça sert')}${bloc('manque', 'En cas de manque')}${bloc('exces', 'En cas d\'excès')}${bloc('conseils', 'Repères pratiques')}
       ${f.grossesse ? `<div class="bloc grossesse"><h3>Grossesse</h3><p>${esc(f.grossesse)}</p></div>` : ''}
@@ -412,7 +420,7 @@ async function vueNutriment(key) {
     <p class="small muted">${{ kcal: 'Pour 100 kcal : les aliments qui en apportent le plus sans trop de calories (densité nutritionnelle).',
       portion: 'Pour la portion habituellement mangée par les adultes (INCA3) : ce qu\'apporte vraiment l\'aliment dans un repas. Seuls les aliments dont la portion vient de l\'étude sont classés.',
       g: 'Teneur pour 100 g ; % du repère pour 100 g.' }[o.par]}</p>
-    <div class="card"><ul class="list">${n.classement.map((a, i) => `<li><a href="#/aliment/${a.code}${o.par === 'g' ? '?g=100' : o.par === 'portion' && a.portion ? `?g=${a.portion}` : ''}">
+    <div class="card"><ul class="list">${n.classement.map((a, i) => `<li><a href="${lienAliment(a.code, a.nom)}${o.par === 'g' ? '?g=100' : o.par === 'portion' && a.portion ? `?g=${a.portion}` : ''}">
       <span class="rank">${i + 1}</span><span class="grow"><span class="nom">${esc(a.nom)}${a.aaEstime && n.cat === 'acidesamines' ? ' <span class="muted small">(estimé)</span>' : ''}</span>
       <span class="sub">${esc(a.groupe || '')}${o.par === 'kcal' ? ` · ${fmt(num(a.brut))}${unite(n)} / 100 g` : ''}${o.par === 'portion' ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span>
       <span class="val">${o.par === 'g' ? fmtBrut(a.brut) : fmt(a.v)}${unite(n)}${r?.valeur && o.par !== 'kcal' ? `<br><span class="small muted">${pctTxt((a.v * 100) / r.valeur)}</span>` : ''}</span></a></li>`).join('')
@@ -420,7 +428,7 @@ async function vueNutriment(key) {
     <h2>Références</h2>
     <ul class="sources small">${n.references.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre)}</a></li>`).join('')}</ul>
     <p class="note">Fiche de vulgarisation rédigée d'après ces références ; elle ne remplace pas l'avis d'un médecin ou d'un diététicien.
-      Classement calculé sur la table Ciqual${n.cat === 'acidesamines' ? ' et les profils USDA' : ''}. <a href="#/sources">Toutes les sources</a></p>`;
+      Classement calculé sur la table Ciqual${n.cat === 'acidesamines' ? ' et les profils USDA' : ''}. <a href="/sources">Toutes les sources</a></p>`;
   $app.querySelectorAll('[data-par]').forEach((b) => b.addEventListener('click', () => { classementOpts.par = b.dataset.par; render(); }));
   document.getElementById('cgrp').addEventListener('change', (e) => { classementOpts.grp = e.target.value; render(); });
   document.getElementById('ctout').addEventListener('change', (e) => { classementOpts.tout = e.target.checked; render(); });
@@ -436,8 +444,8 @@ async function vueMeilleurs(grp) {
     <div class="filters"><select id="mgrp" aria-label="Groupe"><option value="">Tous les groupes</option>
       ${META.groupes.map((x) => `<option value="${x.code}" ${x.code === grp ? 'selected' : ''}>${esc(x.nom)}</option>`).join('')}</select></div>
     <div class="card"><ul class="list">${liste.map(ligneAliment).join('') || '<li class="empty">Aucun aliment.</li>'}</ul></div>
-    <p class="note"><a href="#/sources">Comment est calculé le score ?</a></p>`;
-  document.getElementById('mgrp').addEventListener('change', (e) => { location.hash = e.target.value ? `#/meilleurs/${e.target.value}` : '#/meilleurs'; });
+    <p class="note"><a href="/sources">Comment est calculé le score ?</a></p>`;
+  document.getElementById('mgrp').addEventListener('change', (e) => { go(e.target.value ? `/meilleurs/${e.target.value}` : '/meilleurs'); });
 }
 
 // ---------- Sources ----------
@@ -457,7 +465,7 @@ async function vueComparer() {
   document.title = 'Comparer · Food';
   if (!comparer.length) {
     $app.innerHTML = `<h1>Comparer</h1><p class="empty">Aucun aliment à comparer.<br>Ouvrez un aliment puis touchez « + Comparer » (jusqu'à 4).</p>
-      <p class="center"><a class="btn" href="#/">Rechercher un aliment</a></p>`;
+      <p class="center"><a class="btn" href="/">Rechercher un aliment</a></p>`;
     return;
   }
   const [liste, rep] = await Promise.all([api(`aliments?codes=${comparer.join(',')}`), getReperes()]);
@@ -469,7 +477,7 @@ async function vueComparer() {
       const defined = vals.filter((x) => x != null);
       const best = defined.length > 1 ? Math.max(...defined) : null;
       const isMax = rep[n.key]?.type === 'max' || ['ags', 'cholesterol', 'sodium', 'sucres'].includes(n.key);
-      return `<tr><td><a href="#/nutriment/${n.key}">${esc(n.label)}</a> <span class="muted small">${esc(n.unit)}</span></td>${liste.map((a, i) => {
+      return `<tr><td><a href="/nutriment/${n.key}">${esc(n.label)}</a> <span class="muted small">${esc(n.unit)}</span></td>${liste.map((a, i) => {
         const cls = best != null && vals[i] === best && best > 0 ? (isMax ? 'worst-max' : 'best') : '';
         const r = rep[n.key];
         return `<td class="${cls}">${fmtBrut(a.valeurs[n.key])}${r?.valeur && vals[i] != null ? `<br><span class="small muted">${pctTxt((vals[i] * 100) / r.valeur)}</span>` : ''}</td>`;
@@ -477,14 +485,14 @@ async function vueComparer() {
     }).join('')}`;
   }).join('');
   $app.innerHTML = `<h1>Comparer</h1><p class="small muted">Pour 100 g. En vert la valeur la plus élevée, en rouge pour ce qu'il vaut mieux limiter.</p>
-    <div class="table-wrap"><table class="cmp"><thead><tr><th></th>${liste.map((a) => `<th><a href="#/aliment/${a.code}">${esc(a.nom)}</a><br>
+    <div class="table-wrap"><table class="cmp"><thead><tr><th></th>${liste.map((a) => `<th><a href="${lienAliment(a.code, a.nom)}">${esc(a.nom)}</a><br>
       <button class="iconbtn" data-retirer="${a.code}" aria-label="Retirer ${esc(a.nom)}">✕</button></th>`).join('')}</tr></thead>
       <tbody><tr class="cat"><td colspan="${liste.length + 1}">Synthèse</td></tr>
-        <tr><td><a href="#/sources">Score de la portion</a></td>${liste.map((a) => `<td>${scoreBadge(a.score.lettre)}</td>`).join('')}</tr>
+        <tr><td><a href="/sources">Score de la portion</a></td>${liste.map((a) => `<td>${scoreBadge(a.score.lettre)}</td>`).join('')}</tr>
         <tr><td>Portion habituelle</td>${liste.map((a) => `<td>${a.portion.g ? `${fmt(a.portion.g)} g` : '–'}</td>`).join('')}</tr>
-        <tr><td><a href="#/sources">Qualité des protéines</a></td>${liste.map((a) => `<td>${a.aa?.qualite ? `${a.aa.qualite.indice} %${a.aa.qualite.limitantLabel ? `<br><span class="small muted">${esc(a.aa.qualite.limitantLabel)}</span>` : ''}` : '–'}</td>`).join('')}</tr>
+        <tr><td><a href="/sources">Qualité des protéines</a></td>${liste.map((a) => `<td>${a.aa?.qualite ? `${a.aa.qualite.indice} %${a.aa.qualite.limitantLabel ? `<br><span class="small muted">${esc(a.aa.qualite.limitantLabel)}</span>` : ''}` : '–'}</td>`).join('')}</tr>
         ${cats}</tbody></table></div>
-    <div class="actions"><a class="btn light" href="#/">+ Ajouter un aliment</a><button class="btn danger" id="vider">Tout retirer</button></div>`;
+    <div class="actions"><a class="btn light" href="/">+ Ajouter un aliment</a><button class="btn danger" id="vider">Tout retirer</button></div>`;
   $app.querySelectorAll('[data-retirer]').forEach((b) => b.addEventListener('click', () => {
     comparer = comparer.filter((c) => c !== Number(b.dataset.retirer)); store.set('comparer', comparer); badges(); render();
   }));
@@ -510,7 +518,7 @@ async function vueAssiette() {
   $app.innerHTML = `<h1>Assiette</h1>
     <p class="small muted">Additionnez les aliments d'un repas ou d'une journée pour voir ce qu'ils apportent ensemble.</p>
     <div class="card">
-      ${assiette.length ? assiette.map((it, i) => `<div class="item"><span class="grow"><a href="#/aliment/${it.code}?g=${it.g}">${esc(byCode[it.code]?.nom || `Aliment ${it.code}`)}</a>
+      ${assiette.length ? assiette.map((it, i) => `<div class="item"><span class="grow"><a href="${lienAliment(it.code, byCode[it.code]?.nom)}?g=${it.g}">${esc(byCode[it.code]?.nom || `Aliment ${it.code}`)}</a>
         <span class="sub small muted">${byCode[it.code] ? `${fmt((num(byCode[it.code].valeurs.kcal) || 0) * it.g / 100)} kcal` : ''}</span></span>
         <input type="number" min="1" max="2000" inputmode="decimal" value="${it.g}" data-i="${i}" aria-label="Grammes"> g
         <button class="iconbtn" data-del="${i}" aria-label="Retirer">✕</button></div>`).join('')
@@ -683,7 +691,7 @@ $hq.addEventListener('input', () => {
     const l = await api(`recherche?q=${encodeURIComponent(q)}&limit=8`).catch(() => null);
     if ($hq.value.trim() !== q) return;
     $hres.innerHTML = !l ? '<p class="empty">Hors ligne : recherche indisponible.</p>'
-      : l.length ? `<ul class="list">${l.map(ligneAliment).join('')}</ul><a class="tout" href="#/" data-tout>Tous les résultats →</a>`
+      : l.length ? `<ul class="list">${l.map(ligneAliment).join('')}</ul><a class="tout" href="/" data-tout>Tous les résultats →</a>`
         : `<p class="empty">Aucun aliment pour « ${esc(q)} ».</p>`;
     $hres.hidden = false;
   }, 150);
@@ -695,17 +703,35 @@ $hres.addEventListener('click', (e) => {
 document.getElementById('hsearch').addEventListener('submit', () => {
   if (!$hq.value.trim()) return;
   rechercheQ = $hq.value.trim(); rechercheGrp = '';
-  location.hash = '#/';
+  go('/');
 });
 $hq.addEventListener('keydown', (e) => { if (e.key === 'Escape') { fermerHsearch(true); $hq.blur(); } });
 $hq.addEventListener('focus', () => { if ($hq.value.trim() && $hres.innerHTML) $hres.hidden = false; });
 document.addEventListener('click', (e) => { if (!e.target.closest('#hsearch')) fermerHsearch(); });
 
 // ---------- Routeur ----------
+let lastRoute = location.pathname;
+// Navigation sans rechargement ; replace : remplace l'entrée de l'historique (ex. changement de quantité).
+function go(url, replace) {
+  if (url === location.pathname + location.search) { render(); return; }
+  history[replace ? 'replaceState' : 'pushState'](null, '', url);
+  naviguer();
+}
+function naviguer() {
+  const route = location.pathname;
+  render().then(() => { if (route !== lastRoute) scrollTo(0, 0); lastRoute = route; });
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href^="/"]');
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target || a.hasAttribute('download')) return;
+  e.preventDefault();
+  go(a.getAttribute('href'));
+});
+window.addEventListener('popstate', naviguer);
+
 async function render() {
-  const [route, query] = (location.hash.slice(1) || '/').split('?');
-  const params = new URLSearchParams(query || '');
-  const parts = route.split('/').filter(Boolean);
+  const params = new URLSearchParams(location.search);
+  const parts = location.pathname.split('/').filter(Boolean);
   const tab = { nutriments: 'nutriments', nutriment: 'nutriments', comparer: 'comparer', assiette: 'assiette' }[parts[0]] || (parts[0] ? '' : 'recherche');
   document.body.classList.toggle('home', !parts[0]);
   fermerHsearch(true);
@@ -716,8 +742,8 @@ async function render() {
       for (const n of META.nutriments) NUT[n.key] = n;
     }
     switch (parts[0]) {
-      case undefined: document.title = 'Food : ce que contient votre assiette'; await vueRecherche(); break;
-      case 'aliment': await vueAliment(Number(parts[1]), params); break;
+      case undefined: document.title = 'Food : valeurs nutritionnelles des aliments (table Ciqual)'; await vueRecherche(); break;
+      case 'aliment': await vueAliment(Number.parseInt(parts[1], 10), params); break;
       case 'nutriments': await vueNutriments(); break;
       case 'nutriment': await vueNutriment(parts[1]); break;
       case 'comparer': await vueComparer(); break;
@@ -725,19 +751,18 @@ async function render() {
       case 'profil': await vueProfil(); break;
       case 'meilleurs': await vueMeilleurs(parts[1]); break;
       case 'sources': await vueSources(); break;
-      default: location.replace('#/');
+      default: document.title = 'Page introuvable · Food'; throw new Error('Page introuvable');
     }
   } catch (e) {
     $app.innerHTML = `<p class="empty">${esc(navigator.onLine ? e.message : 'Hors ligne : cette page n\'a pas encore été consultée sur cet appareil.')}</p>
-      <p class="center"><a class="btn light" href="#/">Accueil</a></p>`;
+      <p class="center"><a class="btn light" href="/">Accueil</a></p>`;
   }
 }
 
-let lastRoute = '';
-window.addEventListener('hashchange', () => {
-  const route = location.hash.split('?')[0];
-  render().then(() => { if (route !== lastRoute) scrollTo(0, 0); lastRoute = route; });
-});
-lastRoute = location.hash.split('?')[0];
+// Anciens liens en #/… (avant le passage aux vraies adresses).
+const ancienLien = () => location.hash.startsWith('#/') && (history.replaceState(null, '', location.hash.slice(1)), true);
+window.addEventListener('hashchange', () => { if (ancienLien()) naviguer(); });
+ancienLien();
+lastRoute = location.pathname;
 badges();
 render();
