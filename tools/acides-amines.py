@@ -27,8 +27,15 @@ for line in open(os.path.join(ROOT, 'tools/acides-amines-types.tsv'), encoding='
     rx, desc = line.rstrip('\n').split('\t')
     types.append((re.compile(rx), desc))
 
+signales = set()
 def profil(desc):
     _, d = par_desc[desc]
+    # Contrôle : la somme des acides aminés doit être proche des protéines. Sinon l'analyse USDA est incomplète
+    # (ex. certains bœufs hachés : 69 %, tryptophane divisé par deux) et l'indice chimique serait faussé.
+    rec = sum(v for k, v in d.items() if k != 'prot') / d['prot']
+    if d['prot'] > 5 and not 0.85 <= rec <= 1.15 and desc not in signales:
+        signales.add(desc)
+        print(f'  ! {desc} : acides aminés = {rec:.0%} des protéines')
     return [round(d.get(a, 0) / d['prot'] * 1000, 1) if a in d else None for a in AA]
 
 cq = json.load(open(os.path.join(ROOT, 'data/ciqual.json')))

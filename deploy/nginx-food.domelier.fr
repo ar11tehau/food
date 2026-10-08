@@ -2,6 +2,9 @@ server {
     listen 443 ssl http2;
     server_name food.domelier.fr;
 
+    # Pas de journal des visites : l'appli promet de ne rien conserver (recherches, paramètres du profil). Erreurs seulement.
+    access_log off;
+
     include snippets/security-headers.conf;
     proxy_hide_header X-Content-Type-Options;
 
@@ -22,5 +25,6 @@ server {
 server {
     listen 80;
     server_name food.domelier.fr;
+    access_log off;
     return 301 https://food.domelier.fr$request_uri;
 }

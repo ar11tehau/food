@@ -10,10 +10,11 @@ const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { NUTRIMENTS } = require('./nutriments');
 const { scorePortion, indiceChimique } = require('./score');
+const { unite } = require('./unites');
 
 const DATA = path.join(__dirname, '../data');
 const FICHIERS = ['ciqual.json', 'ciqual-qualite.json', 'portions.json', 'acides-amines.json'];
-const VERSION = 5; // à incrémenter quand le schéma ou un calcul change
+const VERSION = 6; // à incrémenter quand le schéma ou un calcul change
 
 // « Pâté de foie » → « pate de foie » : recherche sans accents ni majuscules.
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -66,7 +67,10 @@ function build(db, d) {
     const q = d.qualite.aliments[code];
     const qualite = {};
     if (q) ciq.forEach((n, i) => { if (brut[n.key] != null && (q[0][i] !== '.' || q[1][i])) qualite[n.key] = [q[0][i] === '.' ? null : q[0][i], q[1][i] || null]; });
-    const [portion, portionSrc] = d.portions.portions[code] || [100, null];
+    let [portion, portionSrc] = d.portions.portions[code] || [100, null];
+    // Aliments qui se comptent : portion arrondie à un nombre entier d'unités (1 pot, 3 œufs) ; au moins une.
+    const u = unite(norm(nom));
+    if (u) portion = Math.max(1, Math.round(portion / u.g)) * u.g;
     const s = scorePortion(v, portion, sssgrp);
     const ic = Object.keys(aa).length ? indiceChimique(aa, v.prot) : null;
     ia.run(code, nom, norm(nom), sci, grp, ssgrp, sssgrp, Object.keys(brut).length - Object.keys(aa).length, JSON.stringify(brut),

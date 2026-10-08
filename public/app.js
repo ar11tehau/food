@@ -37,7 +37,7 @@ let META;
 const NUT = {};
 const reperesPath = () => {
   const p = { ...META.profil, ...profil };
-  return `reperes?sexe=${p.sexe}&grossesse=${p.grossesse ? 1 : 0}&poids=${p.poids}&kcal=${p.kcal}`;
+  return `reperes?sexe=${p.sexe}&grossesse=${p.grossesse ? 1 : 0}&poids=${p.poids}&kcal=${p.kcal}${p.age ? `&age=${p.age}` : ''}`;
 };
 const getReperes = () => api(reperesPath());
 // Affichage par défaut des fiches et classements : « portion » (habituelle) ou « 100g ».
@@ -59,6 +59,15 @@ function fmtBrut(v, k = 1) {
   return fmt(v * k);
 }
 const unite = (n) => ` ${n.unit}`;
+// Équivalent en nombre : « ≈ 3 œufs », « ≈ ½ avocat », « ≈ 1,5 banane ».
+function enUnites(g, u) {
+  if (!u || !g) return '';
+  const n = g / u.g;
+  if (n < 0.2) return '';
+  const x = n < 1 ? Math.max(0.25, Math.round(n * 4) / 4) : n < 3 ? Math.round(n * 2) / 2 : Math.round(n);
+  const txt = { 0.25: '¼', 0.5: '½', 0.75: '¾' }[x] || nf(x, 1);
+  return `${txt} ${x >= 2 ? u.pluriel : u.nom}`;
+}
 const pctTxt = (p) => (p == null ? '' : p < 1 && p > 0 ? '< 1 %' : `${nf(p, 0)} %`);
 
 function gauge(n, val, rep) {
@@ -126,7 +135,7 @@ async function resultats(q, grp) {
 }
 
 const ligneAliment = (a) => `<li><a href="#/aliment/${a.code}">${scoreBadge(a.score)}<span class="grow"><span class="nom">${esc(a.nom)}</span>
-  <span class="sub">${esc(a.groupe || '')}${a.portion ? ` · portion ${fmt(a.portion)} g` : ''}</span></span><span class="val">${a.kcal == null ? '–' : `${fmt(a.kcal)} kcal`}<br><span class="small muted">/ 100 g</span></span></a></li>`;
+  <span class="sub">${esc(a.groupe || '')}${a.portion ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span><span class="val">${a.kcal == null ? '–' : `${fmt(a.kcal)} kcal`}<br><span class="small muted">/ 100 g</span></span></a></li>`;
 
 function accueil() {
   const cles = ['prot', 'fibres', 'fer', 'calcium', 'magnesium', 'iode', 'vitd', 'vitc', 'b9', 'b12', 'dha', 'leu', 'lys', 'sel'];
@@ -140,7 +149,7 @@ function accueil() {
       .map((g) => `<a class="chip ghost" href="#/meilleurs/${g.code}">${esc(g.nom)}</a>`).join('')}</div>
     <p class="note">${esc(META.source)} ; portions : Anses INCA3 ; acides aminés : USDA. ${META.aliments.toLocaleString('fr-FR')} aliments.
       Repères pour un adulte (${esc(profilTxt())}, <a href="#/profil">modifier</a>). <a href="#/sources">Sources et méthodes</a>.
-      Informations générales, pas un avis médical.</p>`;
+      Vos données restent sur cet appareil, rien n'est conservé sur le serveur. Informations générales, pas un avis médical.</p>`;
 }
 
 // ---------- Fiche aliment ----------
@@ -150,7 +159,9 @@ function lignesNutriments(valeurs, k, rep, opts = {}) {
     if (!nuts.length) return '';
     const open = c.key === 'macros' || c.key === 'mineraux' || c.key === 'vitamines';
     const aaNote = c.key === 'acidesamines' && opts.aa
-      ? `<p class="small muted">${opts.aa.estime ? '<b>Estimation</b> d\'après le profil moyen du groupe' : 'D\'après le profil USDA'} « ${esc(opts.aa.source)} », appliqué aux protéines de Ciqual. Indispensables en gras.</p>` : '';
+      ? `<p class="small muted">${opts.aa.estime ? '<b>Estimation</b> d\'après le profil moyen du groupe' : 'D\'après le profil USDA'} « ${esc(opts.aa.source)} », appliqué aux protéines de Ciqual. Indispensables en gras.
+        L'indice chimique (sous « Protéines ») compare chaque acide aminé indispensable, par gramme de protéines, au profil de référence FAO/OMS :
+        le plus en retrait (le « limitant ») fixe la part des protéines réellement utilisable pour fabriquer celles du corps.</p>` : '';
     return `<details class="cat card" ${open ? 'open' : ''}><summary>${esc(c.label)}</summary>${aaNote}
       ${nuts.map((n) => {
         const v = valeurs[n.key];
@@ -158,7 +169,8 @@ function lignesNutriments(valeurs, k, rep, opts = {}) {
         const conf = opts.qualite?.[n.key]?.[0];
         const lbl = n.essentiel ? `<b>${esc(n.label)}</b>` : esc(n.label);
         return `<a class="nut ${enfant ? 'child' : ''}" href="#/nutriment/${n.key}"><span class="lbl">${lbl}${conf ? ` <span class="conf c${conf}" title="Fiabilité Anses : ${CONF[conf]}">${conf}</span>` : ''}</span>
-          <span class="v">${fmtBrut(v, k)}${v == null ? '' : unite(n)}</span>${gauge(n, v == null ? null : num(v) * k, rep[n.key])}</a>`;
+          <span class="v">${fmtBrut(v, k)}${v == null ? '' : unite(n)}</span>${gauge(n, v == null ? null : num(v) * k, rep[n.key])}</a>`
+          + (n.key === 'prot' && c.key === 'macros' ? ligneQualiteProt(opts.aa, num(v) * k) : '');
       }).join('')}</details>`;
   }).join('');
 }
@@ -229,7 +241,7 @@ function carteScore(a) {
   const e = Math.round(((num(a.valeurs.kcal) || 0) * a.portion.g) / META.score.ref.kcal);
   const chip = ([k, p], cls) => `<span class="chip ${cls}">${esc(libScore(k))} ${p > 0 ? '' : '−'}${Math.abs(p)} %</span>`;
   return `<div class="card score-card">
-    <div class="score-head">${scoreBadge(s.lettre, 'big')}<div><b>Score de la portion habituelle (${fmt(a.portion.g)} g)</b>
+    <div class="score-head">${scoreBadge(s.lettre, 'big')}<div><b>Score de la portion habituelle (${fmt(a.portion.g)} g${a.unite ? `, ≈ ${esc(enUnites(a.portion.g, a.unite))}` : ''})</b>
       <p class="small muted">${esc(ORIGINE_PORTION[a.portion.origine] || 'portion par défaut')} · ${e} % des calories du jour · ${nf(s.points, 1)} points</p></div></div>
     ${plus.length ? `<p class="small">Apporte (en % du repère) :</p><div class="chips">${plus.slice(0, 8).map((x) => chip(x, x[1] >= e ? '' : 'ghost')).join('')}</div>` : ''}
     ${moins.some(([, p]) => p < 0) ? `<p class="small">À limiter (en % de la limite du jour) :</p><div class="chips">${moins.map((x) => chip(x, -x[1] > e ? 'warn' : 'ghost')).join('')}</div>` : ''}
@@ -237,16 +249,18 @@ function carteScore(a) {
       <a href="#/sources">Comment est calculé le score ?</a></p></div>`;
 }
 
-function carteProteines(a, k, rep) {
-  const q = a.aa?.qualite;
-  if (!q) return '';
+// Qualité des protéines, en sous-ligne de « Protéines » : seulement si la quantité choisie en apporte au moins 3 g.
+function ligneQualiteProt(aa, prot) {
+  const q = aa?.qualite;
+  if (!q || !(prot >= 3)) return '';
   const lim = q.limitant ? (NUT[q.limitant] ? `<a href="#/nutriment/${q.limitant}">${esc(q.limitantLabel)}</a>` : esc(q.limitantLabel)) : null;
   const cls = q.indice >= 100 ? '' : q.indice >= 75 ? 'max' : 'max over';
-  return `<div class="card"><h3>Qualité des protéines</h3>
-    <div class="nut" style="border:0"><span class="lbl">Indice chimique ${q.indice >= 100 ? '· protéines complètes' : ''}</span><span class="v">${q.indice} %</span>
-      <div class="bar"><div class="gauge ${cls}"><span style="width:${q.indice}%"></span></div><span class="pct"></span></div></div>
-    <p class="small">${lim ? `Acide aminé limitant : ${lim}. ${q.limitant === 'lys' ? 'Associer des légumineuses ou des produits animaux.' : q.limitant === 'soufres' ? 'Associer des céréales, des oléagineux ou des produits animaux.' : ''}` : 'Tous les acides aminés indispensables atteignent le profil de référence.'}</p>
-    <p class="small muted">Profil ${a.aa.estime ? '<b>estimé</b> d\'après le groupe' : 'd\'après l\'aliment USDA'} « ${esc(a.aa.source)} ». <a href="#/sources">Sources</a></p></div>`;
+  const conseil = q.limitant === 'lys' ? ' Associer des légumineuses ou des produits animaux.'
+    : q.limitant === 'soufres' ? ' Associer des céréales, des oléagineux ou des produits animaux.' : '';
+  return `<div class="nut child"><span class="lbl">Qualité (indice chimique)${q.indice >= 100 ? ' · complètes' : ''}</span><span class="v">${q.indice} %</span>
+    <div class="bar"><div class="gauge ${cls}"><span style="width:${q.indice}%"></span></div><span class="pct"></span></div>
+    <span class="small muted" style="grid-column:1/-1">${lim ? `Limitant : ${lim}.${conseil}` : 'Tous les acides aminés indispensables sont au niveau de référence.'}
+      <a href="#/sources">Comment est-ce calculé ?</a></span></div>`;
 }
 
 const CONF = { A: 'très fiable', B: 'fiable', C: 'moins fiable', D: 'peu fiable (estimation)' };
@@ -268,7 +282,7 @@ async function vueAliment(code, params) {
   const gDefaut = par100g() ? 100 : a.portion.g || 100;
   const g = Math.min(Math.max(Number(params.get('g')) || gDefaut, 1), 2000);
   const k = g / 100;
-  recents = [{ code: a.code, nom: a.nom, groupe: a.groupes.at(-1)?.nom, kcal: num(a.valeurs.kcal), portion: a.portion.g, score: a.score.lettre },
+  recents = [{ code: a.code, nom: a.nom, groupe: a.groupes.at(-1)?.nom, kcal: num(a.valeurs.kcal), portion: a.portion.g, unite: a.unite, score: a.score.lettre },
     ...recents.filter((r) => r.code !== a.code)].slice(0, 8);
   store.set('recents', recents);
   document.title = `${a.nom} · Food`;
@@ -279,7 +293,8 @@ async function vueAliment(code, params) {
     ${a.nom_sci ? `<p class="small muted"><i>${esc(a.nom_sci)}</i></p>` : ''}
     <div class="card portion">
       <span>Pour</span>
-      ${a.portion.g ? `<button class="chip ${a.portion.g === g ? 'on' : 'ghost'}" data-g="${a.portion.g}" title="${esc(ORIGINE_PORTION[a.portion.origine] || '')}">portion ${fmt(a.portion.g)} g</button>` : ''}
+      ${a.portion.g ? `<button class="chip ${a.portion.g === g ? 'on' : 'ghost'}" data-g="${a.portion.g}" title="${esc(ORIGINE_PORTION[a.portion.origine] || '')}">portion ${fmt(a.portion.g)} g${a.unite ? ` · ≈ ${esc(enUnites(a.portion.g, a.unite))}` : ''}</button>` : ''}
+      ${a.unite ? [1, 2, 3].map((n) => n * a.unite.g).filter((x) => x !== a.portion.g).map((x) => `<button class="chip ${x === g ? 'on' : 'ghost'}" data-g="${x}">${esc(enUnites(x, a.unite))} (${fmt(x)} g)</button>`).join('') : ''}
       ${PORTIONS.filter((p) => p !== a.portion.g).map((p) => `<button class="chip ${p === g ? 'on' : 'ghost'}" data-g="${p}">${p} g</button>`).join('')}
       <input type="number" id="g" min="1" max="2000" inputmode="decimal" value="${g}" aria-label="Quantité en grammes"> g
     </div>
@@ -290,7 +305,6 @@ async function vueAliment(code, params) {
     ${carteScore(a)}
     ${resumeEnergie(a.valeurs, k, rep)}
     ${pointsForts(a.valeurs, k, rep)}
-    ${carteProteines(a, k, rep)}
     ${lignesNutriments(a.valeurs, k, rep, { qualite: a.qualite, aa: a.aa })}
     <p class="small muted">« – » : valeur non mesurée dans Ciqual (${a.renseignes} constituants renseignés). La petite lettre indique la fiabilité de la valeur (A à D).
       Les pourcentages se rapportent aux repères journaliers du profil (${esc(profilTxt())}).</p>
@@ -362,7 +376,7 @@ async function vueNutriment(key) {
       g: 'Teneur pour 100 g ; % du repère pour 100 g.' }[o.par]}</p>
     <div class="card"><ul class="list">${n.classement.map((a, i) => `<li><a href="#/aliment/${a.code}${o.par === 'g' ? '?g=100' : o.par === 'portion' && a.portion ? `?g=${a.portion}` : ''}">
       <span class="rank">${i + 1}</span><span class="grow"><span class="nom">${esc(a.nom)}${a.aaEstime && n.cat === 'acidesamines' ? ' <span class="muted small">(estimé)</span>' : ''}</span>
-      <span class="sub">${esc(a.groupe || '')}${o.par === 'kcal' ? ` · ${fmt(num(a.brut))}${unite(n)} / 100 g` : ''}${o.par === 'portion' ? ` · portion ${fmt(a.portion)} g` : ''}</span></span>
+      <span class="sub">${esc(a.groupe || '')}${o.par === 'kcal' ? ` · ${fmt(num(a.brut))}${unite(n)} / 100 g` : ''}${o.par === 'portion' ? ` · portion ${fmt(a.portion)} g${a.unite ? ` (≈ ${esc(enUnites(a.portion, a.unite))})` : ''}` : ''}</span></span>
       <span class="val">${o.par === 'g' ? fmtBrut(a.brut) : fmt(a.v)}${unite(n)}${r?.valeur && o.par !== 'kcal' ? `<br><span class="small muted">${pctTxt((a.v * 100) / r.valeur)}</span>` : ''}</span></a></li>`).join('')
       || '<li class="empty">Aucune donnée.</li>'}</ul></div>
     <h2>Références</h2>
@@ -542,44 +556,73 @@ function proteinesRepas(totaux, aliments) {
 }
 
 // ---------- Profil ----------
+// Dépense énergétique : métabolisme de base (Mifflin-St Jeor, 1990) × niveau d'activité physique (NAP, Anses 2016),
+// +250 kcal au 2e trimestre de grossesse (EFSA).
+const ACTIVITES = [[1.4, 'Sédentaire', 'travail assis, peu de marche, pas de sport'],
+  [1.6, 'Peu actif', 'travail assis et 30 à 60 min de marche par jour, ou un peu de sport'],
+  [1.8, 'Actif', 'travail debout ou physique, ou sport régulier plusieurs fois par semaine'],
+  [2.0, 'Très actif', 'travail très physique ou entraînement sportif quotidien']];
+const metabolismeBase = (p) => Math.round(10 * p.poids + 6.25 * p.taille - 5 * p.age + (p.sexe === 'H' ? 5 : -161));
+const depenseTotale = (p) => Math.round((metabolismeBase(p) * p.activite + (p.grossesse ? 250 : 0)) / 10) * 10;
+
 async function vueProfil() {
   document.title = 'Profil · Food';
-  const p = { ...META.profil, ...profil };
-  const suggestion = () => {
-    const sexe = document.querySelector('[name=sexe]:checked').value;
-    const g = document.getElementById('pg').checked;
-    return (sexe === 'H' ? 2500 : 2000) + (g ? 250 : 0);
-  };
+  const p = { age: 40, taille: p0Taille(), activite: 1.6, ...META.profil, ...profil };
+  function p0Taille() { return profil?.sexe === 'H' ? 175 : 163; }
   $app.innerHTML = `<h1>Profil</h1>
-    <p class="muted">Sert à calculer les pourcentages des repères journaliers. Il reste sur cet appareil.</p>
+    <p class="muted">Sert à calculer les pourcentages des repères journaliers.</p>
     <div class="card">
       <div class="form-row"><b>Je suis</b>
         <label><input type="radio" name="sexe" value="F" ${p.sexe !== 'H' ? 'checked' : ''}> une femme</label>
         <label><input type="radio" name="sexe" value="H" ${p.sexe === 'H' ? 'checked' : ''}> un homme</label></div>
       <div class="form-row"><label><input type="checkbox" id="pg" ${p.grossesse ? 'checked' : ''}> Enceinte (repères du 2e trimestre)</label></div>
-      <div class="form-row"><label>Poids <input type="number" id="pp" min="25" max="250" value="${p.poids}"> kg</label>
-        <span class="small muted">pour le repère en protéines (0,83 g/kg)</span></div>
-      <div class="form-row"><label>Énergie <input type="number" id="pk" min="800" max="6000" step="50" value="${p.kcal}"> kcal/jour</label>
-        <button class="btn small light" id="sugg">Valeur courante</button></div>
-      <p class="small muted">Ordre de grandeur pour un adulte moyennement actif : 2 000 kcal (femme), 2 500 kcal (homme), +250 kcal en milieu de grossesse.</p>
+      <div class="form-row">
+        <label>Âge <input type="number" id="pa" min="18" max="110" value="${p.age}"> ans</label>
+        <label>Taille <input type="number" id="pt" min="120" max="220" value="${p.taille}"> cm</label>
+        <label>Poids <input type="number" id="pp" min="25" max="250" value="${p.poids}"> kg</label></div>
+      <div class="form-row"><label>Activité <select id="pact">${ACTIVITES.map(([v, l]) => `<option value="${v}" ${v === Number(p.activite) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <span class="small muted" id="pact-desc"></span></div>
+      <div class="form-row"><span id="calc"></span></div>
+      <div class="form-row"><label>Énergie retenue <input type="number" id="pk" min="800" max="6000" step="10" value="${p.kcal}"> kcal/jour</label>
+        <span class="small muted">calculée ci-dessus, modifiable</span></div>
       <div class="form-row"><b>Afficher les aliments</b>
         <label><input type="radio" name="affichage" value="portion" ${p.affichage !== '100g' ? 'checked' : ''}> par portion habituelle</label>
         <label><input type="radio" name="affichage" value="100g" ${p.affichage === '100g' ? 'checked' : ''}> pour 100 g</label></div>
       <div class="actions"><button class="btn" id="ok">Enregistrer</button></div>
     </div>
-    <p class="note">Repères : Anses 2021 (vitamines et minéraux), EFSA, OMS (sel, sucres). Chiffres arrondis pour un adulte en bonne santé ;
+    <div class="card"><h3>Vos données restent sur votre appareil</h3>
+      <p class="small">Le profil, les aliments consultés, le comparateur et les assiettes sont enregistrés uniquement dans ce navigateur
+        (stockage local). Pas de compte, pas de cookie, pas de mesure d'audience, et le serveur ne tient pas de journal des visites :
+        les recherches et le calcul des repères (sexe, poids, énergie, sans nom ni identifiant) sont traités à la volée, sans être conservés.
+        Effacer les données du site dans le navigateur efface aussi tout cela.</p></div>
+    <p class="note">Métabolisme de base : équation de Mifflin-St Jeor (1990) ; dépense totale = métabolisme de base × niveau d'activité
+      physique (1,4 à 2,0, Anses 2016) ; +250 kcal en milieu de grossesse (EFSA). C'est une estimation à ± 10 % environ.
+      Repères : Anses 2021 (vitamines et minéraux), EFSA, OMS (sel, sucres). Chiffres arrondis pour un adulte en bonne santé ;
       les besoins d'un enfant, d'une personne âgée ou malade sont différents.</p>`;
-  document.getElementById('sugg').addEventListener('click', () => { document.getElementById('pk').value = suggestion(); });
-  document.getElementById('ok').addEventListener('click', () => {
-    profil = {
-      sexe: document.querySelector('[name=sexe]:checked').value,
-      grossesse: document.getElementById('pg').checked,
-      poids: Math.min(Math.max(Number(document.getElementById('pp').value) || 60, 25), 250),
-      kcal: Math.min(Math.max(Number(document.getElementById('pk').value) || 2000, 800), 6000),
+  const $ = (id) => document.getElementById(id);
+  const lire = () => ({
+    sexe: document.querySelector('[name=sexe]:checked').value,
+    grossesse: $('pg').checked,
+    age: Math.min(Math.max(Number($('pa').value) || 40, 18), 110),
+    taille: Math.min(Math.max(Number($('pt').value) || 165, 120), 220),
+    poids: Math.min(Math.max(Number($('pp').value) || 60, 25), 250),
+    activite: Number($('pact').value),
+  });
+  const maj = (e) => {
+    const x = lire();
+    $('pact-desc').textContent = ACTIVITES.find(([v]) => v === x.activite)[2];
+    $('calc').innerHTML = `Métabolisme de base <b>${fmt(metabolismeBase(x))} kcal</b> · dépense totale estimée <b>${fmt(depenseTotale(x))} kcal/jour</b>`;
+    if (e) $('pk').value = depenseTotale(x);
+  };
+  maj();
+  $app.querySelectorAll('[name=sexe], #pg, #pa, #pt, #pp, #pact').forEach((el) => el.addEventListener(el.type === 'number' ? 'input' : 'change', maj));
+  $('ok').addEventListener('click', () => {
+    profil = { ...lire(),
+      kcal: Math.min(Math.max(Number($('pk').value) || 2000, 800), 6000),
       affichage: document.querySelector('[name=affichage]:checked').value,
     };
-    classementOpts.par = par100g() ? 'g' : 'portion';
     if (profil.grossesse) profil.sexe = 'F';
+    classementOpts.par = par100g() ? 'g' : 'portion';
     store.set('profil', profil);
     toast('Profil enregistré');
     history.back();

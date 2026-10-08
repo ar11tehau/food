@@ -24,18 +24,18 @@
 ^fromage|^raclette|^reblochon|^saint.nectaire|^tomme|^cantal|^munster|^morbier|^pont.l.eveque|^edam|^gouda|^maroilles	Cheese, muenster
 ^creme|^mascarpone	Cream, fluid, heavy whipping
 ^lactoserum|^proteine.*(lait|whey|lactoserum)	Whey, sweet, dried
-^boeuf.*hache|^steak hache|^hamburger	Beef, ground, 85% lean meat / 15% fat, patty, cooked, broiled
+^boeuf.*hache|^steak hache|^hamburger	Beef, ground, unspecified fat content, cooked
 ^boeuf|^steak|^bavette|^entrecote|^roti de boeuf|^faux.filet|^rumsteck|^bourguignon|^pot.au.feu	Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, choice, cooked, broiled
 ^veau	Veal, leg (top round), separable lean only, cooked, roasted
-^jambon cru|^jambon sec|^jambon de (bayonne|parme)|^coppa|^bresaola	Ham, sliced, regular (approximately 11% fat)
-^jambon|^epaule cuite	Ham, sliced, regular (approximately 11% fat)
+^jambon cru|^jambon sec|^jambon de (bayonne|parme)|^coppa|^bresaola	Pork, cured, ham, boneless, extra lean and regular, unheated
+^jambon|^epaule cuite	Pork, cured, ham, boneless, extra lean and regular, unheated
 ^bacon|^lardon|^poitrine	Pork, cured, bacon, cooked, baked
-^saucisson|^salami|^chorizo|^rosette	Salami, cooked, beef and pork
+^saucisson|^salami|^chorizo|^rosette	Salami, dry or hard, pork, beef
 ^saucisse|^merguez|^chipolata|^andouillette|^boudin blanc|^cervelas|^knack	Sausage, pork and beef, fresh, cooked
 ^pate (de|en|ou)|^pate,|^terrine (de|ou) (campagne|foie|lapin|canard|porc|volaille)|^rillette|^mousse de foie	Liverwurst spread
 ^porc|^cote de porc|^filet mignon|^roti de porc	Pork, fresh, loin, whole, separable lean only, cooked, roasted
 ^poulet|^volaille|^coquelet|^chapon|^pintade	Chicken, broilers or fryers, meat only, cooked, roasted
-^dinde|^dindonneau	Turkey, whole, meat only, cooked, roasted
+^dinde|^dindonneau	Turkey, fryer-roasters, meat and skin, cooked, roasted
 ^canard|^magret	Duck, domesticated, meat only, cooked, roasted
 ^agneau|^mouton|^gigot	Lamb, ground, cooked, broiled
 ^lapin	Game meat, rabbit, domesticated, composite of cuts, cooked, roasted
@@ -73,7 +73,7 @@
 ^haricot vert|^haricot beurre|^haricot plat	Beans, snap, green, cooked, boiled, drained, without salt
 ^feve	Broadbeans (fava beans), mature seeds, cooked, boiled, without salt
 ^pois casse	Peas, split, mature seeds, cooked, boiled, without salt
-^petit.s? pois|^pois,|^pois gourmand|^pois mange	Peas, green, cooked, boiled, drained, without salt
+^petit.s? pois|^pois,|^pois gourmand|^pois mange	Peas, green, canned, drained solids, rinsed in tap water
 ^soja|^graine de soja|^edamame	Soybeans, mature seeds, cooked, boiled, with salt
 ^tofu	Tofu, raw, firm, prepared with calcium sulfate
 ^tempeh	Tempeh
@@ -112,7 +112,7 @@
 ^pop.corn	Snacks, popcorn, air-popped
 ^pates? .*complete|^spaghetti.*complet	Pasta, whole-wheat, cooked (Includes foods for USDA's Food Distribution Program)
 ^pates?|^spaghetti|^macaroni|^tagliatelle|^lasagne|^ravioli|^nouille|^coquillette|^penne|^gnocchi	Pasta, cooked, enriched, without added salt
-^pain complet|^pain integral|^pain au son|^pain aux cereales|^pain de mie complet	Bread, whole-wheat, commercially prepared, toasted
+^pain complet|^pain integral|^pain au son|^pain aux cereales|^pain de mie complet	Bread, whole-wheat, prepared from recipe, toasted
 ^pain|^baguette|^biscotte|^pain de mie|^brioche|^croissant|^pain au chocolat|^viennoiserie|^galette|^crepe|^gaufre|^cracker|^biscuit|^gateau|^cake|^muffin|^tarte|^pizza|^quiche|^sandwich	Bread, white, commercially prepared, toasted
 ^ble|^farine|^germe de ble|^son de ble	Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)
 ^cereales? .*(petit dejeuner|petit-dejeuner)|^corn flakes|^petales de mais	Cereals ready-to-eat, RALSTON Corn Flakes

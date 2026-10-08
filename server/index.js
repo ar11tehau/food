@@ -7,6 +7,7 @@ const zlib = require('node:zlib');
 const { open, norm } = require('./db');
 const { CATEGORIES, NUTRIMENTS, BY_KEY, PROFIL_DEFAUT, reperes } = require('./nutriments');
 const FICHES = require('./fiches');
+const { unite } = require('./unites');
 const { R, ASSIMILATION, REFS_PAR_CAT, REFS_PAR_CLE } = require('./assimilation');
 const { POSITIFS, NEGATIFS, REF: REF_SCORE, SEUILS, REFERENCE_AA, LABEL_AA, indiceChimique } = require('./score');
 
@@ -52,7 +53,7 @@ const META = {
 
 const chaine = (a) => [a.grp, a.ssgrp, a.sssgrp].filter((c) => c && GROUPES[c]).map((c) => ({ code: c, nom: GROUPES[c] }));
 const resume = (a) => ({ code: a.code, nom: a.nom, groupe: GROUPES[a.sssgrp] || GROUPES[a.ssgrp] || GROUPES[a.grp] || null,
-  kcal: a.kcal, prot: a.prot, gluc: a.gluc, lip: a.lip, portion: a.portion, score: a.score_lettre });
+  kcal: a.kcal, prot: a.prot, gluc: a.gluc, lip: a.lip, portion: a.portion, unite: unite(a.nom_norm), score: a.score_lettre });
 function fiche(a) {
   const qualite = JSON.parse(a.qualite || '{}');
   const codes = [...new Set(Object.values(qualite).map((q) => q[1]).filter(Boolean))];
@@ -61,7 +62,8 @@ function fiche(a) {
   return {
     code: a.code, nom: a.nom, nom_sci: a.nom_sci, groupes: chaine(a), renseignes: a.renseignes, valeurs: v, qualite,
     references: Object.fromEntries(codes.map((c) => [c, qSource.get(c)?.citation])),
-    portion: { g: a.portion, origine: a.portion_src }, // a : aliment INCA3 rapproché, v : variante, g : groupe, null : par défaut
+    portion: { g: a.portion, origine: a.portion_src },
+    unite: unite(a.nom_norm), // { g, nom, pluriel } pour les aliments qui se comptent // a : aliment INCA3 rapproché, v : variante, g : groupe, null : par défaut
     score: { points: a.score, lettre: a.score_lettre, detail: JSON.parse(a.score_detail) },
     aa: p ? { source: p.libelle, estime: !!p.estime, qualite: indiceChimique(v, typeof v.prot === 'number' ? v.prot : a.prot) } : null,
   };
@@ -123,9 +125,10 @@ function api(url) {
     case 'health': return { ok: true, aliments: NB_ALIMENTS };
     case 'meta': return META;
     case 'reperes': {
-      const kcal = Number(q.get('kcal')); const poids = Number(q.get('poids'));
+      const kcal = Number(q.get('kcal')); const poids = Number(q.get('poids')); const age = Number(q.get('age'));
       return reperes({ sexe: q.get('sexe') === 'H' ? 'H' : 'F', grossesse: q.get('grossesse') === '1',
-        kcal: kcal >= 800 && kcal <= 6000 ? kcal : undefined, poids: poids >= 25 && poids <= 250 ? poids : undefined });
+        kcal: kcal >= 800 && kcal <= 6000 ? kcal : undefined, poids: poids >= 25 && poids <= 250 ? poids : undefined,
+        age: age >= 18 && age <= 110 ? age : undefined });
     }
     case 'recherche': return recherche(String(q.get('q') || '').slice(0, 100), q.get('grp'), int('limit', 40, 100));
     case 'meilleurs': return meilleurs(q.get('grp'), int('limit', 30, 100));

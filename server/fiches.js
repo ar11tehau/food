@@ -25,7 +25,7 @@ module.exports = {
     role: "Elles construisent et renouvellent les tissus, transportent des molécules (hémoglobine), défendent l'organisme (anticorps) et accélèrent les réactions chimiques (enzymes). Elles sont formées de 20 acides aminés, dont 9 « indispensables » que le corps ne sait pas fabriquer.",
     manque: "Fonte musculaire, fatigue, cicatrisation lente, infections plus fréquentes, perte de cheveux, œdèmes dans les cas sévères. Les personnes âgées, les régimes très restrictifs et les convalescents sont les plus exposés.",
     exces: "Chez l'adulte en bonne santé, jusqu'à environ 2 g par kg et par jour ne pose pas de problème démontré. Au-delà, ou en cas de maladie rénale, la charge pour les reins augmente. Un excès de viande rouge et de charcuterie est par ailleurs associé à un risque accru de cancer colorectal.",
-    conseils: "Le repère (0,83 g par kg de poids) est calculé à partir du poids du profil. Varier les sources : œufs, poissons, volailles, laitages, légumineuses, céréales complètes, oléagineux. Associer céréales et légumineuses (riz et lentilles, semoule et pois chiches) donne des protéines végétales complètes.",
+    conseils: "Le repère (0,83 g par kg de poids, référence EFSA 2012 reprise par l'Anses ; 1 g/kg à partir de 65 ans pour limiter la perte musculaire) est calculé à partir du poids et de l'âge du profil. Varier les sources : œufs, poissons, volailles, laitages, légumineuses, céréales complètes, oléagineux. Associer céréales et légumineuses (riz et lentilles, semoule et pois chiches) donne des protéines végétales complètes.",
     grossesse: "Les besoins augmentent surtout aux 2e et 3e trimestres (environ +9 puis +28 g par jour selon l'EFSA).",
   },
   gluc: {

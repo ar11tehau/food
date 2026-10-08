@@ -7,7 +7,7 @@
 //   type 'max' : à ne pas dépasser (la jauge se lit « part de la limite »)
 //   type 'cible' : objectif indicatif (énergie, part des calories)
 //   type 'bm'  : besoin moyen (acides aminés, OMS)
-// Une valeur peut être une fonction du profil (énergie, poids). « ul » = limite supérieure de sécurité (LSS).
+// Une valeur peut être une fonction du profil (énergie, poids, âge). Protéines : 0,83 g/kg (EFSA 2012, Anses), 1 g/kg dès 65 ans (Anses). « ul » = limite supérieure de sécurité (LSS).
 // Sources principales : Anses 2021 (références nutritionnelles pour les vitamines et minéraux, actualisation des repères),
 // EFSA (Dietary Reference Values), OMS (sel, sucres). Chiffres arrondis, à relire : ce n'est pas un avis médical.
 
@@ -27,7 +27,7 @@ const CATEGORIES = [
 const LISTE = [
   ['kcal', 10, 'Énergie', 'kcal', 'macros', { ref: { type: 'cible', all: (p) => p.kcal } }],
   ['eau', 13, 'Eau', 'g', 'macros', { ref: { type: 'as', H: 2500, F: 2000, G: 2300 } }],
-  ['prot', 14, 'Protéines', 'g', 'macros', { ref: { type: 'rnp', all: (p) => Math.round(0.83 * p.poids + (p.grossesse ? 9 : 0)) } }],
+  ['prot', 14, 'Protéines', 'g', 'macros', { ref: { type: 'rnp', all: (p) => Math.round((p.age >= 65 ? 1 : 0.83) * p.poids + (p.grossesse ? 9 : 0)) } }],
   ['gluc', 16, 'Glucides', 'g', 'macros', { ref: { type: 'cible', all: pctKcal(47, 4) } }],
   ['lip', 17, 'Lipides', 'g', 'macros', { ref: { type: 'cible', all: pctKcal(37, 9) } }],
   ['fibres', 26, 'Fibres', 'g', 'macros', { ref: { type: 'as', all: 30 } }],
