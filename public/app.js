@@ -40,6 +40,8 @@ const reperesPath = () => {
   return `reperes?sexe=${p.sexe}&grossesse=${p.grossesse ? 1 : 0}&poids=${p.poids}&kcal=${p.kcal}`;
 };
 const getReperes = () => api(reperesPath());
+// Affichage par défaut des fiches et classements : « portion » (habituelle) ou « 100g ».
+const par100g = () => profil?.affichage === '100g';
 
 // ---------- Formatage ----------
 const nf = (n, d) => n.toLocaleString('fr-FR', { maximumFractionDigits: d });
@@ -182,9 +184,16 @@ function resumeEnergie(v, k, rep) {
 
 // Points forts : ≥ 15 % du repère pour la portion (« source de »), ≥ 30 % (« riche en ») ; à surveiller : seuils « élevé »
 // du code couleur britannique pour 100 g (sel 1,5 g, AG saturés 5 g, sucres 22,5 g) ou plus de 30 % d'une limite.
+// Points faibles (même principe que le score) : nutriments à favoriser dont la portion couvre moins de la moitié de sa
+// part des calories du jour ; seulement si la portion pèse au moins 5 % des calories, et jamais pour une valeur non mesurée.
 function pointsForts(v, k, rep) {
   const forts = [];
   const vigilance = [];
+  const e = ((num(v.kcal) || 0) * k * 100) / (rep.kcal?.valeur || META.score.ref.kcal);
+  const faibles = e < 5 ? [] : META.score.positifs.map((key) => {
+    const x = num(v[key]);
+    return x == null || !rep[key]?.valeur ? null : [NUT[key], (x * k * 100) / rep[key].valeur];
+  }).filter((f) => f && f[1] < e / 2).sort((a, b) => a[1] - b[1]).slice(0, 6);
   for (const n of META.nutriments) {
     const r = rep[n.key];
     const x = num(v[n.key]);
@@ -198,9 +207,11 @@ function pointsForts(v, k, rep) {
   }
   forts.sort((a, b) => b[1] - a[1]);
   const chip = ([n, p], cls) => `<a class="chip ${cls}" href="#/nutriment/${n.key}">${esc(n.label)} · ${pctTxt(p)}</a>`;
-  if (!forts.length && !vigilance.length) return '';
+  if (!forts.length && !vigilance.length && !faibles.length) return '';
   return `<div class="card">
     ${forts.length ? `<h3>Points forts</h3><div class="chips">${forts.map((f) => chip(f, f[1] >= 30 ? '' : 'ghost')).join('')}</div>` : ''}
+    ${faibles.length ? `<h3>Points faibles</h3><p class="small muted">Peu présents pour ${pctTxt(e)} des calories du jour :</p>
+      <div class="chips">${faibles.map((f) => chip(f, 'ghost')).join('')}</div>` : ''}
     ${vigilance.length ? `<h3>À surveiller</h3><div class="chips">${vigilance.map((f) => chip(f, f[1] >= 100 ? 'bad' : 'warn')).join('')}</div>` : ''}
     <p class="small muted">En % du repère journalier pour la portion choisie.</p></div>`;
 }
@@ -254,7 +265,8 @@ function carteSources(a) {
 
 async function vueAliment(code, params) {
   const [a, rep] = await Promise.all([api(`aliment/${code}`), getReperes()]);
-  const g = Math.min(Math.max(Number(params.get('g')) || a.portion.g || 100, 1), 2000);
+  const gDefaut = par100g() ? 100 : a.portion.g || 100;
+  const g = Math.min(Math.max(Number(params.get('g')) || gDefaut, 1), 2000);
   const k = g / 100;
   recents = [{ code: a.code, nom: a.nom, groupe: a.groupes.at(-1)?.nom, kcal: num(a.valeurs.kcal), portion: a.portion.g, score: a.score.lettre },
     ...recents.filter((r) => r.code !== a.code)].slice(0, 8);
@@ -285,7 +297,7 @@ async function vueAliment(code, params) {
     ${carteSources(a)}
     ${a.semblables.length ? `<h2>Dans le même groupe</h2><div class="card"><ul class="list">${a.semblables.slice(0, 12).map(ligneAliment).join('')}</ul></div>` : ''}`;
 
-  const setG = (v) => { location.replace(`#/aliment/${code}${Number(v) === a.portion.g ? '' : `?g=${Number(v)}`}`); };
+  const setG = (v) => { location.replace(`#/aliment/${code}${Number(v) === gDefaut ? '' : `?g=${Number(v)}`}`); };
   $app.querySelectorAll('[data-g]').forEach((b) => b.addEventListener('click', () => setG(b.dataset.g)));
   const gi = document.getElementById('g');
   gi.addEventListener('change', () => { if (gi.value > 0) setG(gi.value); });
@@ -313,7 +325,7 @@ async function vueNutriments() {
     </ul></div>`).join('')}`;
 }
 
-let classementOpts = { par: 'portion', grp: '', tout: false };
+let classementOpts = { par: par100g() ? 'g' : 'portion', grp: '', tout: false };
 async function vueNutriment(key) {
   const o = classementOpts;
   const [n, rep] = await Promise.all([
@@ -348,7 +360,7 @@ async function vueNutriment(key) {
     <p class="small muted">${{ kcal: 'Pour 100 kcal : les aliments qui en apportent le plus sans trop de calories (densité nutritionnelle).',
       portion: 'Pour la portion habituellement mangée par les adultes (INCA3) : ce qu\'apporte vraiment l\'aliment dans un repas. Seuls les aliments dont la portion vient de l\'étude sont classés.',
       g: 'Teneur pour 100 g ; % du repère pour 100 g.' }[o.par]}</p>
-    <div class="card"><ul class="list">${n.classement.map((a, i) => `<li><a href="#/aliment/${a.code}${o.par === 'g' ? '?g=100' : ''}">
+    <div class="card"><ul class="list">${n.classement.map((a, i) => `<li><a href="#/aliment/${a.code}${o.par === 'g' ? '?g=100' : o.par === 'portion' && a.portion ? `?g=${a.portion}` : ''}">
       <span class="rank">${i + 1}</span><span class="grow"><span class="nom">${esc(a.nom)}${a.aaEstime && n.cat === 'acidesamines' ? ' <span class="muted small">(estimé)</span>' : ''}</span>
       <span class="sub">${esc(a.groupe || '')}${o.par === 'kcal' ? ` · ${fmt(num(a.brut))}${unite(n)} / 100 g` : ''}${o.par === 'portion' ? ` · portion ${fmt(a.portion)} g` : ''}</span></span>
       <span class="val">${o.par === 'g' ? fmtBrut(a.brut) : fmt(a.v)}${unite(n)}${r?.valeur && o.par !== 'kcal' ? `<br><span class="small muted">${pctTxt((a.v * 100) / r.valeur)}</span>` : ''}</span></a></li>`).join('')
@@ -550,6 +562,9 @@ async function vueProfil() {
       <div class="form-row"><label>Énergie <input type="number" id="pk" min="800" max="6000" step="50" value="${p.kcal}"> kcal/jour</label>
         <button class="btn small light" id="sugg">Valeur courante</button></div>
       <p class="small muted">Ordre de grandeur pour un adulte moyennement actif : 2 000 kcal (femme), 2 500 kcal (homme), +250 kcal en milieu de grossesse.</p>
+      <div class="form-row"><b>Afficher les aliments</b>
+        <label><input type="radio" name="affichage" value="portion" ${p.affichage !== '100g' ? 'checked' : ''}> par portion habituelle</label>
+        <label><input type="radio" name="affichage" value="100g" ${p.affichage === '100g' ? 'checked' : ''}> pour 100 g</label></div>
       <div class="actions"><button class="btn" id="ok">Enregistrer</button></div>
     </div>
     <p class="note">Repères : Anses 2021 (vitamines et minéraux), EFSA, OMS (sel, sucres). Chiffres arrondis pour un adulte en bonne santé ;
@@ -561,7 +576,9 @@ async function vueProfil() {
       grossesse: document.getElementById('pg').checked,
       poids: Math.min(Math.max(Number(document.getElementById('pp').value) || 60, 25), 250),
       kcal: Math.min(Math.max(Number(document.getElementById('pk').value) || 2000, 800), 6000),
+      affichage: document.querySelector('[name=affichage]:checked').value,
     };
+    classementOpts.par = par100g() ? 'g' : 'portion';
     if (profil.grossesse) profil.sexe = 'F';
     store.set('profil', profil);
     toast('Profil enregistré');
@@ -569,12 +586,48 @@ async function vueProfil() {
   });
 }
 
+// ---------- Recherche dans l'en-tête (toutes les pages sauf l'accueil) ----------
+const $hq = document.getElementById('hq');
+const $hres = document.getElementById('hres');
+function fermerHsearch(vider) {
+  $hres.hidden = true;
+  if (vider) $hq.value = '';
+}
+let hT;
+$hq.addEventListener('input', () => {
+  clearTimeout(hT);
+  hT = setTimeout(async () => {
+    const q = $hq.value.trim();
+    if (!q) { fermerHsearch(); return; }
+    const l = await api(`recherche?q=${encodeURIComponent(q)}&limit=8`).catch(() => null);
+    if ($hq.value.trim() !== q) return;
+    $hres.innerHTML = !l ? '<p class="empty">Hors ligne : recherche indisponible.</p>'
+      : l.length ? `<ul class="list">${l.map(ligneAliment).join('')}</ul><a class="tout" href="#/" data-tout>Tous les résultats →</a>`
+        : `<p class="empty">Aucun aliment pour « ${esc(q)} ».</p>`;
+    $hres.hidden = false;
+  }, 150);
+});
+$hres.addEventListener('click', (e) => {
+  if (e.target.closest('[data-tout]')) rechercheQ = $hq.value.trim();
+  if (e.target.closest('a')) setTimeout(() => fermerHsearch(true));
+});
+document.getElementById('hsearch').addEventListener('submit', () => {
+  if (!$hq.value.trim()) return;
+  rechercheQ = $hq.value.trim(); rechercheGrp = '';
+  location.hash = '#/';
+});
+$hq.addEventListener('keydown', (e) => { if (e.key === 'Escape') { fermerHsearch(true); $hq.blur(); } });
+$hq.addEventListener('focus', () => { if ($hq.value.trim() && $hres.innerHTML) $hres.hidden = false; });
+document.addEventListener('click', (e) => { if (!e.target.closest('#hsearch')) fermerHsearch(); });
+
 // ---------- Routeur ----------
 async function render() {
   const [route, query] = (location.hash.slice(1) || '/').split('?');
   const params = new URLSearchParams(query || '');
   const parts = route.split('/').filter(Boolean);
   const tab = { nutriments: 'nutriments', nutriment: 'nutriments', comparer: 'comparer', assiette: 'assiette' }[parts[0]] || (parts[0] ? '' : 'recherche');
+  document.body.classList.toggle('home', !parts[0]);
+  fermerHsearch(true);
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
   try {
     if (!META) {

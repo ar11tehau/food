@@ -14,6 +14,10 @@
 <body>
   <header class="top">
     <a href="#/" class="brand"><img src="/icon-192.png" alt="" width="28" height="28"> Food</a>
+    <form class="hsearch" id="hsearch" role="search" onsubmit="return false">
+      <input id="hq" type="search" autocomplete="off" placeholder="Rechercher un aliment" aria-label="Rechercher un aliment">
+      <div class="hres card" id="hres" hidden></div>
+    </form>
     <a href="#/profil" class="profil-btn" id="profil-btn" aria-label="Profil">Profil</a>
   </header>
   <main id="app" tabindex="-1"><p class="muted center">Chargement…</p></main>
