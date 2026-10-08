@@ -1,7 +1,7 @@
 // Service worker : l'appli s'ouvre sans réseau avec ce qui a déjà été consulté.
 // Interface : réseau d'abord (une mise à jour s'affiche tout de suite), cache si hors ligne.
 // API : les données Ciqual ne changent qu'au déploiement → réponse du cache tout de suite, rafraîchie en arrière-plan.
-const CACHE = 'food-v1';
+const CACHE = 'food-v2';
 const SHELL = ['/', '/style.css', '/app.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/api/meta'];
 
 self.addEventListener('install', (e) => {

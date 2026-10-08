@@ -321,3 +321,6 @@ module.exports = {
     grossesse: "Repère porté à 4,5 µg. Un manque chez la mère expose le bébé à des troubles du développement.",
   },
 };
+
+// Fiches des acides aminés (server/assimilation.js).
+Object.assign(module.exports, require('./assimilation').AA_FICHES);

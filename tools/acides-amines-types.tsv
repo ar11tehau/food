@@ -1,0 +1,149 @@
+# Types d'aliments Ciqual → aliment USDA (SR Legacy) dont on reprend le profil en acides aminés (mg par g de protéines).
+# Colonne 1 : expression régulière sur le nom Ciqual (minuscules, sans accents), testée dans l'ordre : la première qui correspond gagne.
+# Colonne 2 : description exacte de l'aliment USDA.
+^blanc d.oeuf	Egg, white, raw, fresh
+^jaune d.oeuf	Egg, yolk, raw, fresh
+^oeuf|omelette	Egg, whole, raw, fresh
+^lait.*(chevre)	Milk, goat, fluid, with added vitamin D
+^lait.*(brebis)	Milk, sheep, fluid
+^lait de (soja|soya)|^boisson.*soja	Soymilk, original and vanilla, unfortified
+^lait|^babeurre|^lait fermente	Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D
+^yaourt|^yogourt|^skyr|^specialite laitiere	Yogurt, plain, whole milk
+^fromage blanc|^faisselle|^petit.suisse	Cheese, cottage, creamed, large or small curd
+^comte|^gruyere|^beaufort|^abondance	Cheese, gruyere
+^emmental|^emmenthal	Cheese, swiss
+^camembert	Cheese, camembert
+^brie|^coulommiers|^carre de l.est	Cheese, brie
+^roquefort|^bleu|^fourme|^gorgonzola	Cheese, blue
+^fromage de chevre|^chevre|^crottin|^sainte.maure|^valencay	Cheese, goat, soft type
+^mozzarella	Cheese, mozzarella, whole milk
+^parmesan|^parmigiano|^grana	Cheese, parmesan, hard
+^feta	Cheese, feta
+^cheddar|^mimolette	Cheese, cheddar (Includes foods for USDA's Food Distribution Program)
+^ricotta	Cheese, ricotta, part skim milk
+^fromage|^raclette|^reblochon|^saint.nectaire|^tomme|^cantal|^munster|^morbier|^pont.l.eveque|^edam|^gouda|^maroilles	Cheese, muenster
+^creme|^mascarpone	Cream, fluid, heavy whipping
+^lactoserum|^proteine.*(lait|whey|lactoserum)	Whey, sweet, dried
+^boeuf.*hache|^steak hache|^hamburger	Beef, ground, 85% lean meat / 15% fat, patty, cooked, broiled
+^boeuf|^steak|^bavette|^entrecote|^roti de boeuf|^faux.filet|^rumsteck|^bourguignon|^pot.au.feu	Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, choice, cooked, broiled
+^veau	Veal, leg (top round), separable lean only, cooked, roasted
+^jambon cru|^jambon sec|^jambon de (bayonne|parme)|^coppa|^bresaola	Ham, sliced, regular (approximately 11% fat)
+^jambon|^epaule cuite	Ham, sliced, regular (approximately 11% fat)
+^bacon|^lardon|^poitrine	Pork, cured, bacon, cooked, baked
+^saucisson|^salami|^chorizo|^rosette	Salami, cooked, beef and pork
+^saucisse|^merguez|^chipolata|^andouillette|^boudin blanc|^cervelas|^knack	Sausage, pork and beef, fresh, cooked
+^pate (de|en|ou)|^pate,|^terrine (de|ou) (campagne|foie|lapin|canard|porc|volaille)|^rillette|^mousse de foie	Liverwurst spread
+^porc|^cote de porc|^filet mignon|^roti de porc	Pork, fresh, loin, whole, separable lean only, cooked, roasted
+^poulet|^volaille|^coquelet|^chapon|^pintade	Chicken, broilers or fryers, meat only, cooked, roasted
+^dinde|^dindonneau	Turkey, whole, meat only, cooked, roasted
+^canard|^magret	Duck, domesticated, meat only, cooked, roasted
+^agneau|^mouton|^gigot	Lamb, ground, cooked, broiled
+^lapin	Game meat, rabbit, domesticated, composite of cuts, cooked, roasted
+^cheval	Game meat, horse, cooked, roasted
+^(cerf|chevreuil|biche|sanglier|gibier)	Game meat, deer, tenderloin, separable lean only, cooked, broiled
+^foie.*(volaille|poulet|canard|oie)|^foie gras	Chicken, liver, all classes, cooked, simmered
+^foie	Beef, variety meats and by-products, liver, cooked, braised
+^(rognon|coeur|langue|tripe|ris de veau)	Beef, variety meats and by-products, tongue, raw
+^boudin noir|^sang	Blood sausage
+^saumon	Fish, salmon, Atlantic, farmed, cooked, dry heat
+^truite	Fish, trout, rainbow, farmed, cooked, dry heat
+^thon	Fish, tuna, light, canned in water, drained solids (Includes foods for USDA's Food Distribution Program)
+^sardine	Fish, sardine, Atlantic, canned in oil, drained solids with bone
+^maquereau	Fish, mackerel, Atlantic, cooked, dry heat
+^hareng	Fish, herring, Atlantic, cooked, dry heat
+^anchois	Fish, anchovy, european, canned in oil, drained solids
+^cabillaud|^morue|^eglefin|^lieu|^colin|^merlu|^merlan|^lotte|^julienne|^poisson pane|^poisson blanc	Fish, cod, Atlantic, cooked, dry heat
+^sole|^plie|^limande|^carrelet|^turbot|^fletan	Fish, flatfish (flounder and sole species), cooked, dry heat
+^bar |^bar,|^loup|^dorade|^daurade|^rouget|^sar	Fish, sea bass, mixed species, cooked, dry heat
+^tilapia|^pangasius|^perche|^sandre|^brochet	Fish, tilapia, cooked, dry heat
+^crevette|^gambas|^langoustine|^ecrevisse	Crustaceans, shrimp, mixed species, raw (may contain additives to retain moisture)
+^crabe|^tourteau|^araignee	Crustaceans, crab, alaska king, cooked, moist heat
+^homard|^langouste	Crustaceans, lobster, northern, cooked, moist heat
+^moule	Mollusks, mussel, blue, cooked, moist heat
+^huitre	Mollusks, oyster, eastern, wild, cooked, dry heat
+^coquille|^noix de saint|^petoncle	Mollusks, scallop, mixed species, raw
+^calmar|^calamar|^encornet|^seiche|^poulpe	Mollusks, squid, mixed species, raw
+^surimi	Fish, surimi
+^poisson	Fish, cod, Atlantic, cooked, dry heat
+^lentille	Lentils, mature seeds, cooked, boiled, without salt
+^pois chiche|^houmous|^hoummos	Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt
+^haricot (rouge|noir)|^chili	Beans, kidney, red, mature seeds, cooked, boiled, without salt
+^haricot (blanc|coco|lingot|tarbais|sec)|^flageolet|^cassoulet	Beans, navy, mature seeds, cooked, boiled, without salt
+^haricot mungo|^soja vert|^pousse de .soja|^graine germee de haricot	Mung beans, mature seeds, sprouted, raw
+^haricot vert|^haricot beurre|^haricot plat	Beans, snap, green, cooked, boiled, drained, without salt
+^feve	Broadbeans (fava beans), mature seeds, cooked, boiled, without salt
+^pois casse	Peas, split, mature seeds, cooked, boiled, without salt
+^petit.s? pois|^pois,|^pois gourmand|^pois mange	Peas, green, cooked, boiled, drained, without salt
+^soja|^graine de soja|^edamame	Soybeans, mature seeds, cooked, boiled, with salt
+^tofu	Tofu, raw, firm, prepared with calcium sulfate
+^tempeh	Tempeh
+^seitan|^gluten	Bread, protein (includes gluten)
+^lupin	Lupins, mature seeds, cooked, boiled, without salt
+^cacahuete|^arachide|^beurre de cacahuete|^pate d.arachide	Peanuts, all types, dry-roasted, without salt
+^amande	Nuts, almonds
+^noix de cajou	Nuts, cashew nuts, dry roasted, without salt added
+^noix du bresil	Nuts, brazilnuts, dried, unblanched
+^noix de pecan	Nuts, pecans
+^noix de macadamia	Nuts, macadamia nuts, raw
+^noix de coco|^coco|^lait de coco	Nuts, coconut meat, raw
+^noisette|^pate a tartiner	Nuts, hazelnuts or filberts
+^pistache	Nuts, pistachio nuts, dry roasted, without salt added
+^pignon	Nuts, pine nuts, dried
+^noix	Nuts, walnuts, english
+^sesame|^tahin|^tahini	Seeds, sesame seeds, whole, dried
+^tournesol	Seeds, sunflower seed kernels, dried
+^courge, graine|^graine de courge|^pepin de courge	Seeds, pumpkin and squash seed kernels, dried
+^lin|^graine de lin	Seeds, flaxseed
+^chia|^graine de chia	Seeds, chia seeds, dried
+^chanvre|^graine de chanvre	Seeds, hemp seed, hulled
+^quinoa	Quinoa, cooked
+^sarrasin|^galette de sarrasin|^kasha	Buckwheat groats, roasted, cooked
+^millet	Millet, cooked
+^amarante	Amaranth grain, uncooked
+^avoine|^flocon.*avoine|^muesli|^porridge	Cereals, oats, regular and quick, not fortified, dry
+^orge	Barley, pearled, cooked
+^epeautre	Spelt, uncooked
+^boulgour|^bulgur	Bulgur, cooked
+^semoule|^couscous	Couscous, cooked
+^riz complet|^riz brun|^riz semi.complet	Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)
+^riz	Rice, white, long-grain, regular, enriched, cooked
+^mais doux|^epi de mais	Corn, sweet, yellow, cooked, boiled, drained, without salt
+^mais|^polenta|^semoule de mais|^farine de mais|^tortilla	Cornmeal, whole-grain, yellow
+^pop.corn	Snacks, popcorn, air-popped
+^pates? .*complete|^spaghetti.*complet	Pasta, whole-wheat, cooked (Includes foods for USDA's Food Distribution Program)
+^pates?|^spaghetti|^macaroni|^tagliatelle|^lasagne|^ravioli|^nouille|^coquillette|^penne|^gnocchi	Pasta, cooked, enriched, without added salt
+^pain complet|^pain integral|^pain au son|^pain aux cereales|^pain de mie complet	Bread, whole-wheat, commercially prepared, toasted
+^pain|^baguette|^biscotte|^pain de mie|^brioche|^croissant|^pain au chocolat|^viennoiserie|^galette|^crepe|^gaufre|^cracker|^biscuit|^gateau|^cake|^muffin|^tarte|^pizza|^quiche|^sandwich	Bread, white, commercially prepared, toasted
+^ble|^farine|^germe de ble|^son de ble	Wheat flour, whole-grain (Includes foods for USDA's Food Distribution Program)
+^cereales? .*(petit dejeuner|petit-dejeuner)|^corn flakes|^petales de mais	Cereals ready-to-eat, RALSTON Corn Flakes
+^pomme de terre|^puree|^frite|^chips|^pomme dauphine|^gratin dauphinois|^rosti	Potatoes, flesh and skin, raw
+^patate douce	Sweet potato, cooked, baked in skin, flesh, without salt
+^brocoli	Broccoli, cooked, boiled, drained, without salt
+^epinard	Spinach, cooked, boiled, drained, without salt
+^chou.fleur	Cauliflower, cooked, boiled, drained, without salt
+^chou de bruxelles	Cabbage, cooked, boiled, drained, without salt
+^chou|^choucroute	Cabbage, cooked, boiled, drained, without salt
+^champignon|^cepe|^girolle|^pleurote|^shiitake	Mushrooms, white, raw
+^tomate|^sauce tomate|^coulis	Tomatoes, red, ripe, raw, year round average
+^carotte	Carrots, raw
+^courgette|^courge|^potiron|^potimarron|^citrouille	Squash, summer, zucchini, includes skin, raw
+^poivron	Peppers, sweet, red, raw
+^oignon|^echalote|^poireau	Onions, raw
+^ail	Garlic, raw
+^asperge	Asparagus, cooked, boiled, drained
+^artichaut	Asparagus, cooked, boiled, drained
+^salade(?! de )(?!,.*(composee|nicoise|cesar|pates|riz|thon|poulet|taboule))|^laitue|^mache|^roquette|^batavia|^frisee|^endive|^cresson	Lettuce, cos or romaine, raw
+^avocat	Avocados, raw, all commercial varieties
+^aubergine	Eggplant, raw
+^concombre	Cucumber, with peel, raw
+^betterave	Beets, raw
+^levure	Leavening agents, yeast, baker's, active dry
+^spiruline|^algue	Seaweed, spirulina, dried
+^gelatine	Gelatins, dry powder, unsweetened
+^cacao|^chocolat	Cocoa, dry powder, unsweetened
+^banane	Bananas, raw
+^pomme|^compote	Apples, dried, sulfured, uncooked
+^orange|^clementine|^mandarine	Oranges, raw, all commercial varieties
+^fraise	Strawberries, raw
+^kiwi	Kiwifruit, green, raw
+^raisin	Grapes, red or green (European type, such as Thompson seedless), raw

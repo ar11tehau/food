@@ -68,3 +68,20 @@ test('fichiers statiques et routes inconnues', async () => {
   }
   assert.strictEqual((await get('/api/rien')).status, 404);
 });
+
+test('portions, score, qualité, acides aminés', async () => {
+  const a = (await get('/api/aliment/13039')).body; // pomme
+  assert.ok(a.portion.g >= 100 && a.portion.g <= 200);
+  assert.match(a.score.lettre, /^[A-E]$/);
+  assert.ok(Object.values(a.qualite).some(([c]) => /^[A-D]$/.test(c)));
+  assert.ok(Object.keys(a.references).length > 0);
+  const l = (await get('/api/recherche?q=lentille%20bouillie')).body[0];
+  const lentille = (await get(`/api/aliment/${l.code}`)).body;
+  assert.ok(lentille.valeurs.lys > 500 && lentille.aa.qualite.limitant === 'soufres');
+  const n = (await get('/api/nutriment/leu?par=portion&limit=5')).body;
+  assert.strictEqual(n.classement.length, 5);
+  assert.ok(n.fiche.resume && n.references.length);
+  assert.ok((await get('/api/nutriment/fer')).body.assimilation.freine);
+  const m = (await get('/api/meilleurs?grp=02&limit=5')).body;
+  assert.ok(m.length === 5 && m[0].points >= m[4].points);
+});

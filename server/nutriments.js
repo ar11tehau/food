@@ -6,11 +6,13 @@
 //   type 'as'  : apport satisfaisant (besoin mal connu, apport observé chez des gens en bonne santé)
 //   type 'max' : à ne pas dépasser (la jauge se lit « part de la limite »)
 //   type 'cible' : objectif indicatif (énergie, part des calories)
+//   type 'bm'  : besoin moyen (acides aminés, OMS)
 // Une valeur peut être une fonction du profil (énergie, poids). « ul » = limite supérieure de sécurité (LSS).
 // Sources principales : Anses 2021 (références nutritionnelles pour les vitamines et minéraux, actualisation des repères),
 // EFSA (Dietary Reference Values), OMS (sel, sucres). Chiffres arrondis, à relire : ce n'est pas un avis médical.
 
 const pctKcal = (pct, kcalParG) => (p) => Math.round((p.kcal * pct) / 100 / kcalParG);
+const parKg = (mg) => ({ type: 'bm', all: (p) => Math.round(mg * p.poids) });
 
 const CATEGORIES = [
   ['macros', 'Essentiel'],
@@ -18,6 +20,7 @@ const CATEGORIES = [
   ['lipides', 'Lipides en détail'],
   ['mineraux', 'Minéraux et oligo-éléments'],
   ['vitamines', 'Vitamines'],
+  ['acidesamines', 'Acides aminés'],
 ];
 
 // [clé, colonne, libellé, unité, catégorie, options]
@@ -93,9 +96,33 @@ const LISTE = [
   ['b9', 78, 'Vitamine B9 (folates)', 'µg', 'vitamines', { ref: { type: 'rnp', H: 330, F: 330, G: 600 } }],
   ['acidefolique', 81, 'Acide folique (ajouté)', 'µg', 'vitamines', { parent: 'b9', ref: { type: 'max', all: 1000 } }],
   ['b12', 82, 'Vitamine B12', 'µg', 'vitamines', { ref: { type: 'as', H: 4, F: 4, G: 4.5 } }],
+
+  // Acides aminés : pas dans Ciqual (col null), calculés à partir des profils USDA (data/acides-amines.json).
+  // Besoins des adultes en mg par kg de poids et par jour (OMS/FAO/UNU 2007) ; phénylalanine : repère commun avec la tyrosine.
+  ['his', null, 'Histidine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(10) }],
+  ['ile', null, 'Isoleucine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(20) }],
+  ['leu', null, 'Leucine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(39) }],
+  ['lys', null, 'Lysine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(30) }],
+  ['met', null, 'Méthionine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(10.4) }],
+  ['cys', null, 'Cystéine', 'mg', 'acidesamines', { parent: 'met', ref: parKg(4.1) }],
+  ['phe', null, 'Phénylalanine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(25) }],
+  ['tyr', null, 'Tyrosine', 'mg', 'acidesamines', { parent: 'phe' }],
+  ['thr', null, 'Thréonine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(15) }],
+  ['trp', null, 'Tryptophane', 'mg', 'acidesamines', { essentiel: true, ref: parKg(4) }],
+  ['val', null, 'Valine', 'mg', 'acidesamines', { essentiel: true, ref: parKg(26) }],
+  ['arg', null, 'Arginine', 'mg', 'acidesamines', {}],
+  ['gly', null, 'Glycine', 'mg', 'acidesamines', {}],
+  ['pro', null, 'Proline', 'mg', 'acidesamines', {}],
+  ['glu', null, 'Acide glutamique (et glutamine)', 'mg', 'acidesamines', {}],
+  ['asp', null, 'Acide aspartique (et asparagine)', 'mg', 'acidesamines', {}],
+  ['alanine', null, 'Alanine', 'mg', 'acidesamines', {}],
+  ['ser', null, 'Sérine', 'mg', 'acidesamines', {}],
 ];
 
-const NUTRIMENTS = LISTE.map(([key, col, label, unit, cat, o]) => ({ key, col, label, unit, cat, parent: o.parent || null, ref: o.ref || null }));
+// Code du constituant dans les fichiers XML de Ciqual (indice de confiance et source de chaque valeur).
+const CODES_CIQUAL = { kcal: 328, eau: 400, prot: 25000, gluc: 31000, lip: 40000, fibres: 34100, sel: 10004, alcool: 60000, sucres: 32000, amidon: 33110, saccharose: 32480, glucose: 32250, fructose: 32210, lactose: 32410, galactose: 32220, maltose: 32430, polyols: 34000, acidesorg: 65000, ags: 40302, agmi: 40303, agpi: 40304, oleique: 41819, linoleique: 41826, ala: 41833, epa: 42053, dha: 42263, arachidonique: 42046, butyrique: 40400, caproique: 40600, caprylique: 40800, caprique: 41000, laurique: 41200, myristique: 41400, palmitique: 41600, stearique: 41800, cholesterol: 75100, calcium: 10200, chlorure: 10170, cuivre: 10290, fer: 10260, iode: 10530, magnesium: 10120, manganese: 10251, phosphore: 10150, potassium: 10190, selenium: 10340, sodium: 10110, zinc: 10300, vita: 51104, retinol: 51200, betacarotene: 51330, vitd: 52100, vitd2: 52200, vitd3: 52300, vite: 53100, alphatoco: 71010, k1: 54101, k2: 54104, vitc: 55100, b1: 56100, b2: 56200, b3: 56310, b5: 56400, b6: 56500, b9: 56702, acidefolique: 56708, b12: 56600 };
+
+const NUTRIMENTS = LISTE.map(([key, col, label, unit, cat, o]) => ({ key, col, ciqual: CODES_CIQUAL[key] || null, label, unit, cat, parent: o.parent || null, essentiel: !!o.essentiel, ref: o.ref || null }));
 const BY_KEY = Object.fromEntries(NUTRIMENTS.map((n) => [n.key, n]));
 
 const PROFIL_DEFAUT = { sexe: 'F', grossesse: false, poids: 60, kcal: 2000 };
@@ -115,4 +142,7 @@ function reperes(profil) {
   return Object.fromEntries(NUTRIMENTS.filter((n) => n.ref).map((n) => [n.key, repere(n, profil)]));
 }
 
-module.exports = { CATEGORIES, NUTRIMENTS, BY_KEY, PROFIL_DEFAUT, repere, reperes };
+// Nutriments présents dans le fichier Ciqual (les acides aminés viennent d'ailleurs).
+const CIQUAL = NUTRIMENTS.filter((n) => n.col != null);
+
+module.exports = { CATEGORIES, NUTRIMENTS, CIQUAL, BY_KEY, PROFIL_DEFAUT, repere, reperes };

@@ -8,7 +8,7 @@ WorkingDirectory=/home/arii/apps/food/app
 Environment=NODE_ENV=production PORT=3310 HOST=127.0.0.1 FOOD_DB=/home/arii/apps/food/data/ciqual.db
 ExecStart=/usr/bin/node --max-old-space-size=48 server/index.js
 Restart=on-failure
-MemoryMax=100M
+MemoryMax=160M
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

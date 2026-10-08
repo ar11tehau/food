@@ -169,3 +169,20 @@ table.cmp tr.cat td { font-weight: 700; background: transparent; padding-top: 14
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 @media (min-width: 800px) { .tabs { justify-content: center; } .tabs a { flex: 0 0 140px; } }
+
+/* Score de la portion, fiabilité, sources */
+.score { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: none; border-radius: 6px;
+  font-weight: 800; font-size: .85rem; color: #fff; }
+.score.big { width: 48px; height: 48px; font-size: 1.6rem; border-radius: 12px; }
+.sA { background: #1e7b3c; } .sB { background: #7bb03a; } .sC { background: #e3b11b; color: #2a2300; } .sD { background: #e07a1f; } .sE { background: #c8372d; }
+.score-head { display: flex; gap: 12px; align-items: center; }
+.score-head p { margin: 2px 0 0; }
+.conf { display: inline-block; min-width: 15px; padding: 0 3px; border-radius: 4px; font-size: .62rem; font-weight: 700; line-height: 15px;
+  text-align: center; vertical-align: 1px; border: 1px solid currentColor; }
+.cA { color: #1e7b3c; } .cB { color: #5c8f2a; } .cC { color: #b0850a; } .cD { color: #c8372d; } .cx { color: var(--muted); }
+@media (prefers-color-scheme: dark) { .cA { color: #6fcf8a; } .cB { color: #a6d36b; } .cC { color: #f0c94a; } .cD { color: #f08174; } }
+ul.sources { margin: 6px 0; padding-left: 18px; }
+ul.sources li { margin: 3px 0; overflow-wrap: anywhere; }
+.fiche .bloc.assimilation { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px 8px; }
+.fiche .ok { color: var(--brand); } .fiche .ko { color: var(--warn); }
+.list a .score { margin-right: 2px; }
