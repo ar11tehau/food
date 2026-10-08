@@ -1,0 +1,8 @@
+# Lancé par food-deploy.path quand GitHub Actions a fini d'envoyer le code.
+# Aucune dépendance npm : un redémarrage suffit (la base SQLite se reconstruit si data/ciqual.json a changé).
+[Unit]
+Description=Food : redémarrage après déploiement
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl restart food.service

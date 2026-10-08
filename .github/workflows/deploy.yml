@@ -1,0 +1,42 @@
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+
+      - name: Tests
+        run: node --test test/
+
+      - name: Envoi sur le serveur
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          SSH="ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+          # La clé est bridée côté serveur par rrsync sur /home/arii/apps/food/app. Aucune dépendance npm à installer.
+          rsync -a --delete -e "$SSH" --exclude .git --exclude .github --exclude source --exclude node_modules \
+            --exclude 'data/*.db' --exclude 'data/*.db.tmp' --exclude .deploy-stamp ./ arii@domelier.fr:./
+          # Envoyé en dernier : déclenche le redémarrage (food-deploy.path).
+          echo "$GITHUB_SHA" > .deploy-stamp
+          rsync -a -e "$SSH" .deploy-stamp arii@domelier.fr:./

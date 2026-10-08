@@ -1,0 +1,5 @@
+node_modules/
+source/
+data/*.db
+data/*.db.tmp
+.deploy-stamp

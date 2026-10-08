@@ -1,0 +1,9 @@
+[Unit]
+Description=Food : surveille l'arrivée d'un nouveau déploiement
+
+[Path]
+PathChanged=/home/arii/apps/food/app/.deploy-stamp
+Unit=food-deploy.service
+
+[Install]
+WantedBy=multi-user.target

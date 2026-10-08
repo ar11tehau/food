@@ -1,0 +1,19 @@
+[Unit]
+Description=Food (table Ciqual, food.domelier.fr)
+After=network.target
+
+[Service]
+User=arii
+WorkingDirectory=/home/arii/apps/food/app
+Environment=NODE_ENV=production PORT=3310 HOST=127.0.0.1 FOOD_DB=/home/arii/apps/food/data/ciqual.db
+ExecStart=/usr/bin/node --max-old-space-size=48 server/index.js
+Restart=on-failure
+MemoryMax=100M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/arii/apps/food/data
+
+[Install]
+WantedBy=multi-user.target

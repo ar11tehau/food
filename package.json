@@ -1,0 +1,17 @@
+{
+  "name": "food",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Intérêt nutritionnel des aliments (table Ciqual de l'Anses) : macro et micronutriments, fiches nutriments, comparateur, assiette. PWA.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "ciqual": "node tools/ciqual-json.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "MIT"
+}
