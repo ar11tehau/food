@@ -3,3 +3,4 @@ source/
 data/*.db
 data/*.db.tmp
 .deploy-stamp
+.claude/
