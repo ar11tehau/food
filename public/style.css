@@ -89,10 +89,10 @@ select, input[type=number], input[type=text] {
 .list .val { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .9rem; }
 .list li.act { display: flex; align-items: center; gap: 6px; }
 .list li.act > a { flex: 1; min-width: 0; }
-.acts { display: flex; gap: 6px; }
+.acts { display: flex; flex-direction: column; gap: 4px; }
 .ib {
-  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--muted);
-  font-size: 1.05rem; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 6.4em; padding: 4px 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--brand);
+  font: inherit; font-size: .74rem; font-weight: 600; line-height: 1.2; cursor: pointer; white-space: nowrap; text-align: left;
 }
 .ib.on { background: var(--brand); border-color: var(--brand); color: var(--card); }
 .list .rank { width: 1.6em; color: var(--muted); font-size: .8rem; text-align: right; }
@@ -149,11 +149,11 @@ details.cat > summary::after { content: "▾"; color: var(--muted); transition: 
 details.cat:not([open]) > summary::after { transform: rotate(-90deg); }
 
 /* Fiche nutriment */
-.fiche h3 { color: var(--brand); }
 .fiche .bloc { margin: 8px 0; }
-.fiche .bloc.manque h3 { color: var(--warn); }
-.fiche .bloc.exces h3 { color: var(--bad); }
-.fiche .bloc.grossesse { background: var(--brand-soft); border-radius: 10px; padding: 4px 12px 8px; }
+.fiche .bloc > summary { color: var(--brand); }
+.fiche .bloc.manque > summary { color: var(--warn); }
+.fiche .bloc.exces > summary { color: var(--bad); }
+.fiche .bloc.grossesse { background: var(--brand-soft); }
 .repere { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .9rem; }
 .repere b { font-variant-numeric: tabular-nums; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
@@ -197,12 +197,28 @@ table.cmp tr.cat td { font-weight: 700; background: transparent; padding-top: 14
 .sA { background: #1e7b3c; } .sB { background: #7bb03a; } .sC { background: #e3b11b; color: #2a2300; } .sD { background: #e07a1f; } .sE { background: #c8372d; }
 .score-head { display: flex; gap: 12px; align-items: center; }
 .score-head p { margin: 2px 0 0; }
-.conf { display: inline-block; min-width: 15px; padding: 0 3px; border-radius: 4px; font-size: .62rem; font-weight: 700; line-height: 15px;
-  text-align: center; vertical-align: 1px; border: 1px solid currentColor; }
+.conf { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; vertical-align: 1px; margin: 0 1px; }
 .cA { color: #1e7b3c; } .cB { color: #5c8f2a; } .cC { color: #b0850a; } .cD { color: #c8372d; } .cx { color: var(--muted); }
 @media (prefers-color-scheme: dark) { .cA { color: #6fcf8a; } .cB { color: #a6d36b; } .cC { color: #f0c94a; } .cD { color: #f08174; } }
 ul.sources { margin: 6px 0; padding-left: 18px; }
 ul.sources li { margin: 3px 0; overflow-wrap: anywhere; }
-.fiche .bloc.assimilation { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px 8px; }
 .fiche .ok { color: var(--brand); } .fiche .ko { color: var(--warn); }
 .list a .score { margin-right: 2px; }
+
+/* Aides à la lecture */
+.intro { margin: 0 0 10px; color: var(--muted); }
+.bandeau { background: var(--brand-soft); border-radius: 8px; padding: 6px 10px; margin: 8px 0; }
+.legende { margin: 6px 0 -4px; line-height: 1.6; }
+.legende .score { vertical-align: -3px; margin-right: 2px; width: 18px; height: 18px; font-size: .7rem; border-radius: 4px; }
+details.aide { display: inline; }
+details.aide > summary { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid var(--muted); color: var(--muted); font-size: .72rem; font-weight: 700; cursor: pointer; list-style: none; vertical-align: 1px; }
+details.aide > summary::-webkit-details-marker { display: none; }
+details.aide[open] > summary { background: var(--brand); border-color: var(--brand); color: var(--card); }
+.aide-txt { display: block; flex-basis: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  margin: 6px 0; font-size: .82rem; color: var(--ink); font-weight: 400; text-align: left; }
+.guide dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: .88rem; }
+.guide dt { font-weight: 600; white-space: nowrap; }
+.guide dd { margin: 0; color: var(--muted); }
+.portion .autre { font-size: .9rem; color: var(--muted); }
+.etat { margin: -4px 0 6px; }

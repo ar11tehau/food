@@ -45,9 +45,9 @@ const LISTE = [
   ['polyols', 27, 'Polyols', 'g', 'glucides', { parent: 'gluc' }],
   ['acidesorg', 30, 'Acides organiques', 'g', 'glucides', {}],
 
-  ['ags', 31, 'AG saturés', 'g', 'lipides', { parent: 'lip', ref: { type: 'max', all: pctKcal(12, 9) } }],
-  ['agmi', 32, 'AG mono-insaturés', 'g', 'lipides', { parent: 'lip', ref: { type: 'cible', all: pctKcal(17, 9) } }],
-  ['agpi', 33, 'AG polyinsaturés', 'g', 'lipides', { parent: 'lip' }],
+  ['ags', 31, 'Acides gras saturés', 'g', 'lipides', { parent: 'lip', ref: { type: 'max', all: pctKcal(12, 9) } }],
+  ['agmi', 32, 'Acides gras mono-insaturés', 'g', 'lipides', { parent: 'lip', ref: { type: 'cible', all: pctKcal(17, 9) } }],
+  ['agpi', 33, 'Acides gras polyinsaturés', 'g', 'lipides', { parent: 'lip' }],
   ['oleique', 42, 'Acide oléique (oméga-9)', 'g', 'lipides', { parent: 'agmi' }],
   ['linoleique', 43, 'Acide linoléique (oméga-6)', 'g', 'lipides', { parent: 'agpi', ref: { type: 'cible', all: pctKcal(4, 9) } }],
   ['ala', 44, 'Acide alpha-linolénique (oméga-3)', 'g', 'lipides', { parent: 'agpi', ref: { type: 'cible', all: (p) => Math.round(p.kcal * 0.01 / 9 * 10) / 10 } }],

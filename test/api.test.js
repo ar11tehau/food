@@ -108,3 +108,10 @@ test('portions, score, qualité, acides aminés', async () => {
   const m = (await get('/api/meilleurs?grp=02&limit=5')).body;
   assert.ok(m.length === 5 && m[0].points >= m[4].points);
 });
+
+test('recherche : la forme cuite avant la forme sèche', async () => {
+  const r = (await get('/api/recherche?q=lentille')).body;
+  assert.match(r[0].nom, /cuit/);
+  const p = (await get('/api/recherche?q=pomme')).body;
+  assert.ok(p.slice(0, 5).some((a) => /crue/.test(a.nom)));
+});

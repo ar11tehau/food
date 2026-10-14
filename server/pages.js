@@ -73,8 +73,8 @@ module.exports = function pages({ db, GROUPES, CATEGORIES, NUTRIMENTS, BY_KEY, F
       contenu: `<h1>${esc(n.label)}</h1>
         ${f.resume ? `<p>${esc(f.resume)}</p>` : ''}
         ${enfants.length ? `<div class="chips">${enfants.map((c) => `<a class="chip ghost" href="/nutriment/${c.key}">${esc(c.label)}</a>`).join('')}</div>` : ''}
-        ${bloc('role', 'À quoi ça sert')}${bloc('manque', 'En cas de manque')}${bloc('exces', 'En cas d\'excès')}${bloc('conseils', 'Repères pratiques')}${bloc('grossesse', 'Grossesse')}
-        ${top.length ? `<h2>Meilleures sources (par portion)</h2><div class="card">${liste(top.map((a) => [urlAliment(a), a.nom, `${fmt(a.v)} ${n.unit} pour 100 g`]))}</div>` : ''}`,
+        ${top.length ? `<h2>Meilleures sources (par portion)</h2><div class="card">${liste(top.map((a) => [urlAliment(a), a.nom, `${fmt(a.v)} ${n.unit} pour 100 g`]))}</div>` : ''}
+        ${bloc('role', 'À quoi ça sert')}${bloc('manque', 'En cas de manque')}${bloc('exces', 'En cas d\'excès')}${bloc('conseils', 'Repères pratiques')}${bloc('grossesse', 'Grossesse')}`,
     };
   }
 
@@ -82,7 +82,7 @@ module.exports = function pages({ db, GROUPES, CATEGORIES, NUTRIMENTS, BY_KEY, F
     const g = grp ? GRP1.find((x) => x.code === grp) : null;
     if (grp && !g) return null;
     const l = db.prepare(`SELECT code, nom FROM aliments WHERE portion_src IN ('a', 'v')${g ? ' AND grp = ?' : ''} ORDER BY score DESC LIMIT 60`).all(...(g ? [g.code] : []));
-    const titre = g ? `${g.nom} : les portions les plus intéressantes` : 'Les portions les plus intéressantes';
+    const titre = g ? `${g.nom} : les plus nutritifs par portion` : 'Les aliments les plus nutritifs, par portion';
     return {
       canonique: g ? `/meilleurs/${g.code}` : '/meilleurs',
       titre,
@@ -104,7 +104,7 @@ module.exports = function pages({ db, GROUPES, CATEGORIES, NUTRIMENTS, BY_KEY, F
       contenu: `<h1>Valeurs nutritionnelles des aliments</h1>
         <p>Calories, protéines, vitamines, minéraux et acides aminés de ${NB_ALIMENTS.toLocaleString('fr-FR')} aliments, en % des repères journaliers.</p>
         <h2>Où trouver…</h2>${chipsNutriments(['prot', 'fibres', 'fer', 'calcium', 'magnesium', 'iode', 'vitd', 'vitc', 'b9', 'b12', 'dha', 'leu', 'lys', 'sel'].filter((k) => BY_KEY[k]))}
-        <p><a href="/nutriments">Tous les nutriments</a> · <a href="/meilleurs">Les portions les plus intéressantes</a> · <a href="/sources">Sources et méthodes</a></p>
+        <p><a href="/nutriments">Tous les nutriments</a> · <a href="/meilleurs">Les aliments les plus nutritifs</a> · <a href="/sources">Sources et méthodes</a></p>
         <p class="note">${esc(source)}.</p>`,
     }),
     '/nutriments': () => ({

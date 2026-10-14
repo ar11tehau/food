@@ -36,7 +36,7 @@ const SOURCES = {
   portions: { titre: 'Portions habituelles', texte: `${META_DB.source_portions}. Les aliments INCA3 ont été rapprochés des aliments Ciqual par leur composition et leur nom ; à défaut, portion estimée à partir des aliments voisins du même groupe.`, liens: [['Anses, étude INCA3 (data.gouv.fr)', 'https://www.data.gouv.fr/fr/datasets/donnees-de-consommations-et-habitudes-alimentaires-de-letude-inca-3/']] },
   aa: { titre: 'Acides aminés', texte: `Ciqual ne publie pas les acides aminés. ${META_DB.source_aa} : soit le profil d'un aliment équivalent, soit (« estimé ») la moyenne des aliments reconnus du même groupe.`, liens: [R.usda] },
   reperes: { titre: 'Repères journaliers', texte: 'Adultes en bonne santé : Anses 2021 (vitamines et minéraux), Anses 2011 et 2016 (lipides, glucides, protéines, fibres), EFSA, OMS (sel, sucres, acides aminés). Chiffres arrondis.', liens: [R.anses2021, R.anses2016, R.anses2011, R.efsa, R.omsSel, R.oms2007] },
-  score: { titre: 'Score de la portion', texte: "Inspiré de l'indice NRF (Nutrient Rich Foods). Une portion qui apporte E % des calories du jour devrait apporter au moins E % de chaque nutriment : bonus pour les 16 nutriments à favoriser au-delà de E, malus pour les AG saturés, les sucres libres (estimés) et le sodium au-delà de E. Lettres par quintiles des ~750 aliments les plus consommés (A = 20 % les meilleurs). Ce n'est pas le Nutri-Score.", liens: [['Fulgoni, Keast, Drewnowski (2009), Nutrient-Rich Foods Index, J. Nutr.', 'https://doi.org/10.3945/jn.108.101360']] },
+  score: { titre: 'Score de la portion', texte: "Inspiré de l'indice NRF (Nutrient Rich Foods). Une portion qui apporte E % des calories du jour devrait apporter au moins E % de chaque nutriment : bonus pour les 16 nutriments à favoriser au-delà de E, malus pour les acides gras saturés, les sucres libres (estimés) et le sodium au-delà de E. Lettres par quintiles des ~750 aliments les plus consommés (A = 20 % les meilleurs). Ce n'est pas le Nutri-Score.", liens: [['Fulgoni, Keast, Drewnowski (2009), Nutrient-Rich Foods Index, J. Nutr.', 'https://doi.org/10.3945/jn.108.101360']] },
   qualiteProt: { titre: 'Qualité des protéines', texte: "Indice chimique : pour chaque acide aminé indispensable, quantité par gramme de protéines comparée au profil de référence FAO/OMS de l'adulte ; le plus bas donne l'indice et l'acide aminé « limitant ». Ne tient pas compte de la digestibilité (environ 95 % pour les protéines animales, 75 à 90 % pour les végétales).", liens: [R.fao2013, R.oms2007] },
 };
 
@@ -85,8 +85,14 @@ function recherche(q, grp, limit) {
   if (grp) { where.push('grp = ?'); args.push(grp); }
   const rows = db.prepare(`SELECT * FROM aliments WHERE ${where.join(' AND ')}
     ORDER BY (nom_norm LIKE ?) DESC, (instr(nom_norm, ',') = 0 OR instr(nom_norm, ?) < instr(nom_norm, ',')) DESC, length(nom) LIMIT ?`)
-    .all(...args, `${mots[0]}%`, mots[0], limit);
-  return rows.map(resume);
+    .all(...args, `${mots[0]}%`, mots[0], limit + 30);
+  // On mange les lentilles ou les pâtes cuites : la forme sèche ou crue passe après la forme cuite quand les deux existent
+  // (même nom avant la virgule). Fruits et légumes exceptés : on les mange aussi crus.
+  const base = (a) => norm(a.nom.split(',')[0]);
+  const cuits = new Set(rows.filter((a) => / cuit/.test(a.nom_norm)).map(base));
+  const brut = (a) => cuits.has(base(a)) && (/ (sec|seche|secs|seches)( |$)/.test(a.nom_norm)
+    || (a.grp !== '02' && / (cru|crue|crus|crues)( |$)/.test(a.nom_norm)));
+  return [...rows.filter((a) => !brut(a)), ...rows.filter(brut)].slice(0, limit).map(resume);
 }
 
 // Aliments les plus riches en un nutriment : pour 100 g, pour 100 kcal (densité) ou pour la portion habituelle.
